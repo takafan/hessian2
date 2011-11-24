@@ -15,7 +15,7 @@ hessian client. based on Christer Sandberg's hessian, fixed UTF-8 pack, allow de
   client = Hessian2::HessianClient.new(url)
   
   #call remote function: Map<Long, Person> queryPassportUidMap(List<Long> uidList)
-  puts client.queryPassportUidMap([Hessian::TypeWrapper.new('Long', 47), Hessian::TypeWrapper.new('Long', 48)])  
+  puts client.queryPassportUidMap([Hessian2::TypeWrapper.new('Long', 47), Hessian2::TypeWrapper.new('Long', 48)])  
   
 == Authors
 
