@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.name        = "hessian2"
   s.version     = Hessian2::VERSION
   s.authors     = ["takafan"]
-  s.email       = ["TODO: Write your email address"]
+  s.email       = ["takafan@163.com"]
   s.homepage    = "http://github.com/takafan/hessian2"
   s.summary     = %q{Hessian2}
   s.description = %q{hessian client. based on Christer Sandberg's hessian, fixed UTF-8 pack, allow declare long type, ruby1.9 tested.}
