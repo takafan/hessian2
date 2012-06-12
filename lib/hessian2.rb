@@ -73,7 +73,7 @@ module Hessian2
         when Binary
           [ 'B', val.data.length ].pack('an') << val.data
         when String
-          [ 'S', val.length ].pack('an') << val.unpack('C*').pack('U*')
+          [ 'S', val.length ].pack('an') << val.unpack('U*').pack('U*')
         when
           Integer
           # Max and min values for integers in Java.
