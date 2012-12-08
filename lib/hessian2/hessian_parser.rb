@@ -4,7 +4,7 @@ module Hessian2
     def parse(data, refs = [], chunks = [])
       t = data.slice!(0)
       case t
-      when 'r'
+      when 'r' # reply
         data.slice!(0, 2)
         parse(data)
       when 'f' # fault
