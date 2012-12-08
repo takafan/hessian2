@@ -12,7 +12,7 @@ module Hessian2
         code = parse(data)
         parse(data)
         message = parse(data)
-        raise HessianException.new, message
+        raise HessianException.new, "#{code}: #{message}"
       when 'N' # null
         nil
       when 'T' # true
