@@ -27,7 +27,7 @@ module Hessian2
             end
             write(TypeWrapper.new('X', obj), refs, chunks)
           else
-            if obj.bytesize == obj.size
+            if obj.ascii_only?
               chunks << [ 'X', obj.size ].pack('an') << obj
             else
               chunks << [ 'X', obj.size, obj.unpack('U*') ].flatten.pack('anU*')
@@ -72,7 +72,7 @@ module Hessian2
           end
           write(val, refs, chunks)
         else
-          if val.bytesize == val.size
+          if val.ascii_only?
             chunks << [ 'S', val.size ].pack('an') << val
           else
             chunks << [ 'S', val.size, val.unpack('U*') ].flatten.pack('anU*')
@@ -83,8 +83,8 @@ module Hessian2
         str = val.to_s
         [ 'S', str.size ].pack('an') << str # string
       when Array
-        id = refs[val.object_id]
-        return [ 'R', id ].pack('aN') if id
+        idx = refs[val.object_id]
+        return [ 'R', idx ].pack('aN') if idx
 
         refs[val.object_id] = refs.size
       
@@ -94,8 +94,8 @@ module Hessian2
         val.each{ |v| str << write(v, refs) }
         str << 'z'  # list
       when Hash
-        id = refs[val.object_id]
-        return [ 'R', id ].pack('aN') if id 
+        idx = refs[val.object_id]
+        return [ 'R', idx ].pack('aN') if idx
         
         refs[val.object_id] = refs.size
 
@@ -107,7 +107,7 @@ module Hessian2
         end
         str << 'z'  # map
       else  # covert val to hash
-        hash = {}.tap do |h| 
+        h = {}.tap do |h| 
           val.instance_variables.each {|var| h[var.to_s.delete("@")] = val.instance_variable_get(var) }
         end
 
@@ -122,7 +122,7 @@ module Hessian2
           end
         end
 
-        write(hash, refs, chunks, type)
+        write(h, refs, chunks, type)
       end
     end
 
