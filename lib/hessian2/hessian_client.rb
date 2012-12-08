@@ -30,12 +30,7 @@ module Hessian2
       conn = Net::HTTP.new(@host, @port, *@proxy.values_at(:host, :port, :user, :password))
       conn.use_ssl = true and conn.verify_mode = OpenSSL::SSL::VERIFY_NONE if @scheme == 'https'
       conn.start do |http|
-        data = http.request(req, write_call(method, args)).body
-
-        r = data.slice!(0, 3)
-        raise HessianException.new, "Invalid response, expected r\\x01\\x00" unless r == "r\x01\x00"
-
-        parse(data)
+        parse http.request(req, write_call(method, args)).body
       end
     end
 

@@ -4,6 +4,9 @@ module Hessian2
     def parse(data, refs = [], chunks = [])
       t = data.slice!(0)
       case t
+      when 'r'
+        data.slice!(0, 2)
+        parse(data)
       when 'f' # fault
         parse(data)
         code = parse(data)
@@ -24,7 +27,7 @@ module Hessian2
         data.slice!(0, 8).unpack('G')[0] 
       when 'd' # date
         val = data.slice!(0, 8).unpack('Q>')[0]
-        Time.at(val / 1000)
+        Time.at(val / 1000, val % 1000 * 1000)
       when 'S', 's', 'X', 'x' # string, xml
         len = data.slice!(0, 2).unpack('n')[0]
 

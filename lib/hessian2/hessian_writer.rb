@@ -60,7 +60,7 @@ module Hessian2
       when Float
         [ 'D', val ].pack('aG') # double
       when Time
-        [ 'd', val.to_i * 1000 ].pack('aQ>')  # date
+        [ 'd', val.to_f * 1000 ].pack('aQ>')  # date
       when String
         if val.size > CHUNK_SIZE
           chunk = val.slice!(0, CHUNK_SIZE)
