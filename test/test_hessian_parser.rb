@@ -4,9 +4,8 @@ require 'hessian2'
 require 'test/unit'
 
 class HessianParserTest < Test::Unit::TestCase
-  def parse res
-    Hessian2::HessianClient::HessianParser.new.parse_response res
-  end
+  
+  include  Hessian2::HessianParser
   
   def test_integer
     assert_equal 4711, parse("r\001\000I\000\000\022gz")
@@ -53,5 +52,5 @@ class HessianParserTest < Test::Unit::TestCase
     assert_equal map, parse([ "r\001\000Mt\000\000S\000\anumbersVt\000\a[double",
       "l\000\000\000\003D?\361\231\231\231\231\231\232D?\363333333D?",
       "\364\314\314\314\314\314\315zS\000\006sillenI\000\000\000 zz" ].join)
-    end
+  end
 end

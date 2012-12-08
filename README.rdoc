@@ -1,8 +1,6 @@
 = hessian2
 
-hessian客户端。在Christer Sandberg的hessian基础上，修正了pack UTF-8(中文等字符)，指定Long型，更好地被ruby1.9支持。
-
-hessian client. based on Christer Sandberg's hessian, fixed UTF-8 pack, allow declare long type, ruby1.9 tested.
+implement hessian 1.0.2 specification. refactor Christer Sandberg's hessian, ruby 1.9.3 required.
 
 == Using
 
@@ -14,9 +12,10 @@ hessian client. based on Christer Sandberg's hessian, fixed UTF-8 pack, allow de
 
   client = Hessian2::HessianClient.new(url)
   
-  #call remote function: Map<Long, Person> queryPassportUidMap(List<Long> uidList)
-  puts client.queryPassportUidMap([Hessian2::TypeWrapper.new('Long', 47), Hessian2::TypeWrapper.new('Long', 48)])  
-  
+  # call remote function: public Person getPersonByUid(Long uid);
+  uid = Hessian2::TypeWrapper.new('L', 59)
+  puts client.getPersonByUid(uid)
+
 == Authors
 
 * {Takafan}[http://hululuu.com]

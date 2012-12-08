@@ -9,7 +9,7 @@ methods = %w(
 )
 
 methods.each do |m|
-  Net::HTTP.start('localhost', 8080) do |http|
+  Net::HTTP.start('127.0.0.1', 9999) do |http|
     res = http.send_request('POST', '/test',
       call + [ m.length, m ].pack('na*') + 'z', HEADER)
     p res.body

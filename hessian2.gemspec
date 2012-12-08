@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.email       = ["takafan@163.com"]
   s.homepage    = "http://github.com/takafan/hessian2"
   s.summary     = %q{Hessian2}
-  s.description = %q{hessian client. based on Christer Sandberg's hessian, fixed UTF-8 pack, allow declare long type, ruby1.9 tested.}
+  s.description = %q{implement hessian 1.0.2 specification. refactor Christer Sandberg's hessian, ruby 1.9.3 required.}
 
   s.rubyforge_project = "hessian2"
 
