@@ -1,4 +1,4 @@
-module Hessian
+module Hessian2
   module HessianWriter
     CHUNK_SIZE = 32768
 

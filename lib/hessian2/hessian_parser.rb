@@ -1,4 +1,4 @@
-module Hessian
+module Hessian2
   module HessianParser
 
     def parse(data, refs = [], chunks = [])

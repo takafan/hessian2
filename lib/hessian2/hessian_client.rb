@@ -1,8 +1,10 @@
 require 'uri'
 require 'net/http'
 require 'net/https'
+require 'hessian2/hessian_writer'
+require 'hessian2/hessian_parser'
 
-module Hessian
+module Hessian2
   class HessianClient
     attr_accessor :user, :password
     attr_reader :scheme, :host, :port, :path, :proxy

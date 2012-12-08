@@ -1,1 +1,3 @@
-class HessianException < RuntimeError; end
+module Hessian2
+  class HessianException < RuntimeError; end
+end
