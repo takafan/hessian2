@@ -1,11 +1,27 @@
 module Hessian2
-  module HessianWriter
+  module Writer
     CHUNK_SIZE = 32768
 
     def write_call(method, args)
       refs = {}
-      out = [ 'c', '0', '1', 'm', method.length ].pack('ahhan') << method
+      out = [ 'c', '1', '0', 'm', method.length ].pack('ahhan') << method
       args.each { |arg| out << write(arg, refs) }
+      out << 'z'
+    end
+
+    def write_reply(ret)
+      out = [ 'r', '1', '0' ].pack('ahh')
+      out << write(ret)
+      out << 'z'
+    end
+
+    def write_fault(e)
+      out = [ 'r', '1', '0', 'f', 'S', 4 ].pack('ahhaan') << 'code'
+      out << write(e.class.to_s)
+      out << [ 'S', 7 ].pack('an') << 'message'
+      out << write(e.message)
+      out << [ 'S', 6 ].pack('an') << 'detail'
+      out << write(e.backtrace)
       out << 'z'
     end
 

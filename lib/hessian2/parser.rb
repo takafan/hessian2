@@ -1,18 +1,36 @@
-module Hessian2
-  module HessianParser
+require 'hessian2/exception'
 
-    def parse(data, refs = [], chunks = [])
+module Hessian2
+  module Parser
+
+    def parse(data)
+      rets, refs, chunks = [], [], []
+      while data[0] != 'z'
+        rets << parse_object(data, refs, chunks)
+      end
+      rets.size == 1 ? rets.first : rets
+    end
+
+    def parse_object(data, refs = [], chunks = [])
       t = data.slice!(0)
       case t
+      when 'c' # call
+        data.slice!(0, 2)
+        parse_object(data)
+      when 'm' # method
+        len = data.slice!(0, 2).unpack('n')[0]
+        data.slice!(0, len)
       when 'r' # reply
         data.slice!(0, 2)
-        parse(data)
+        parse_object(data)
       when 'f' # fault
-        parse(data)
-        code = parse(data)
-        parse(data)
-        message = parse(data)
-        raise HessianException.new, "#{code}: #{message}"
+        parse_object(data)
+        code = parse_object(data)
+        parse_object(data)
+        message = parse_object(data)
+        # parse_object(data)
+        # detail = parse_object(data)
+        raise Exception.new, "#{code} - #{message}"
       when 'N' # null
         nil
       when 'T' # true
@@ -36,9 +54,11 @@ module Hessian2
         data.slice!(0, chunk.pack('U*').bytesize)
         
         if 'sx'.include?(t)
-          parse(data, refs, chunks)
+          parse_object(data, refs, chunks)
         else
-          chunks.flatten.pack('U*')
+          str = chunks.flatten.pack('U*')
+          chunks.clear
+          str
         end
       when 'B', 'b' # binary
         len = data.slice!(0, 2).unpack('n')[0]
@@ -47,27 +67,29 @@ module Hessian2
         chunks << chunk
         
         if t == 'b'
-          parse(data, refs, chunks)
+          parse_object(data, refs, chunks)
         else
-          chunks.flatten 
+          str = chunks.flatten.join
+          chunks.clear
+          str
         end
       when 'V' # list
         data.slice!(0, 3 + data.unpack('an')[1]) if data[0] == 't'
         data.slice!(0, 5) if data[0] == 'l'
         refs << (list = [])
-        list << parse(data, refs) while data[0] != 'z'
+        list << parse_object(data, refs) while data[0] != 'z'
         data.slice!(0)
         list
       when 'M' # map
         data.slice!(0, 3 + data.unpack('an')[1]) if data[0] == 't'
         refs << (map = {})
-        map[parse(data, refs)] = parse(data, refs) while data[0] != 'z'
+        map[parse_object(data, refs)] = parse_object(data, refs) while data[0] != 'z'
         data.slice!(0)
         map
       when 'R' # ref
         refs[data.slice!(0, 4).unpack('N')[0]]
       else
-        raise HessianException.new, "Invalid type: '#{t}'"
+        raise Exception.new, "Invalid type: '#{t}'"
       end
     end
 

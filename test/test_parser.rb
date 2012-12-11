@@ -5,7 +5,7 @@ require 'test/unit'
 
 class HessianParserTest < Test::Unit::TestCase
   
-  include  Hessian2::HessianParser
+  include  Hessian2::Parser
   
   def test_integer
     assert_equal 4711, parse("r\001\000I\000\000\022gz")
