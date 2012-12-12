@@ -24,7 +24,7 @@ post '/person' do
   person = Person.new
   begin
     status 200
-    puts request.inspect
+    puts request.body.string
     person.handle(request.body.string)
   rescue Exception => e
     status 500
