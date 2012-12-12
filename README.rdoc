@@ -8,9 +8,9 @@ implement hessian 1.0.2 specification. refactor Christer Sandberg's hessian, rub
 
   require 'hessian2'
 
-  url = 'http://localhost:8080/person_service'
+  url = 'http://127.0.0.1:9292/person'
 
-  client = Hessian2::HessianClient.new(url)
+  client = Hessian2::Client.new(url)
   
   # call remote function: public Person getPersonByUid(Long uid);
   uid = Hessian2::TypeWrapper.new('L', 59)

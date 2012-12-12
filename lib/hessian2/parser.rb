@@ -11,6 +11,7 @@ module Hessian2
       rets.size == 1 ? rets.first : rets
     end
 
+    private
     def parse_object(data, refs = [], chunks = [])
       t = data.slice!(0)
       case t
@@ -30,7 +31,7 @@ module Hessian2
         message = parse_object(data)
         # parse_object(data)
         # detail = parse_object(data)
-        raise Exception.new, "#{code} - #{message}"
+        raise Exception.new, code == 'RuntimeError' ? message : "#{code} - #{message}"
       when 'N' # null
         nil
       when 'T' # true
@@ -48,7 +49,6 @@ module Hessian2
         Time.at(val / 1000, val % 1000 * 1000)
       when 'S', 's', 'X', 'x' # string, xml
         len = data.slice!(0, 2).unpack('n')[0]
-
         chunk = data.unpack("U#{len}")
         chunks << chunk
         data.slice!(0, chunk.pack('U*').bytesize)
@@ -89,7 +89,7 @@ module Hessian2
       when 'R' # ref
         refs[data.slice!(0, 4).unpack('N')[0]]
       else
-        raise Exception.new, "Invalid type: '#{t}'"
+        raise "Invalid type: '#{t}'"
       end
     end
 

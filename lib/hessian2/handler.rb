@@ -7,7 +7,7 @@ module Hessian2
     include Writer
 
     def handle(call)
-      write_reply(self.send(*parse(call)))
+      reply_value(self.send(*parse(call)))
     end
 
   end

@@ -2,38 +2,38 @@ module Hessian2
   module Writer
     CHUNK_SIZE = 32768
 
-    def write_call(method, args)
+    def call(method, args)
       refs = {}
       out = [ 'c', '1', '0', 'm', method.length ].pack('ahhan') << method
-      args.each { |arg| out << write(arg, refs) }
+      args.each { |arg| out << write_object(arg, refs) }
       out << 'z'
     end
 
-    def write_reply(ret)
+    def reply_value(val)
       out = [ 'r', '1', '0' ].pack('ahh')
-      out << write(ret)
+      out << write_object(val)
       out << 'z'
     end
 
-    def write_fault(e)
+    def reply_fault(e)
       out = [ 'r', '1', '0', 'f', 'S', 4 ].pack('ahhaan') << 'code'
-      out << write(e.class.to_s)
+      out << write_object(e.class.to_s)
       out << [ 'S', 7 ].pack('an') << 'message'
-      out << write(e.message)
+      out << write_object(e.message)
       out << [ 'S', 6 ].pack('an') << 'detail'
-      out << write(e.backtrace)
+      out << write_object(e.backtrace)
       out << 'z'
     end
 
     private
-    def write(val, refs = {}, chunks = [], type = nil)
+    def write_object(val, refs = {}, chunks = [], type = nil)
       case val
       when TypeWrapper
         obj, hessian_type = val.object, val.hessian_type
         case hessian_type
-        when 'L', 'Long', 'long'  # declare as long
+        when 'L', 'Long', 'long'  # declare fixnum as long
           [ 'L', obj ].pack('aq>')  # long
-        when 'X', 'x' # declare as xml
+        when 'X', 'x' # declare string as xml
           if obj.size > CHUNK_SIZE
             chunk = obj.slice!(0, CHUNK_SIZE)
             if chunk.ascii_only?
@@ -41,7 +41,7 @@ module Hessian2
             else
               chunks << [ 's', CHUNK_SIZE, chunk.unpack('U*') ].flatten.pack('anU*')
             end
-            write(TypeWrapper.new('X', obj), refs, chunks)
+            write_object(TypeWrapper.new('X', obj), refs, chunks)
           else
             if obj.ascii_only?
               chunks << [ 'X', obj.size ].pack('an') << obj
@@ -50,18 +50,18 @@ module Hessian2
             end
             chunks.join # xml
           end
-        when 'B', 'b' # declare as binary
+        when 'B', 'b' # declare string as binary
           [ 'B', obj.size ].pack('an') << obj
           if obj.size > CHUNK_SIZE
             chunk = obj.slice!(0, CHUNK_SIZE)
             chunks << [ 'b', CHUNK_SIZE ].pack('an') << chunk
-            write(TypeWrapper.new('B', obj), refs, chunks)
+            write_object(TypeWrapper.new('B', obj), refs, chunks)
           else
             chunks << [ 'B', obj.size ].pack('an') << obj
             chunks.join # binary
           end
         else  # type for list, map
-          write(obj, refs, chunks, hessian_type)
+          write_object(obj, refs, chunks, hessian_type)
         end
       when NilClass
         'N' # null
@@ -76,7 +76,7 @@ module Hessian2
       when Float
         [ 'D', val ].pack('aG') # double
       when Time
-        [ 'd', val.to_f * 1000 ].pack('aQ>')  # date
+        [ 'd', val.to_i * 1000 + val.usec / 1000 ].pack('aQ>')  # date
       when String
         if val.size > CHUNK_SIZE
           chunk = val.slice!(0, CHUNK_SIZE)
@@ -86,7 +86,7 @@ module Hessian2
             # unpack-pack if chunk incompatible with ASCII-8BIT
             chunks << [ 's', CHUNK_SIZE, chunk.unpack('U*') ].flatten.pack('anU*')
           end
-          write(val, refs, chunks)
+          write_object(val, refs, chunks)
         else
           if val.ascii_only?
             chunks << [ 'S', val.size ].pack('an') << val
@@ -107,7 +107,7 @@ module Hessian2
         str = 'V'
         str << 't' << [ type.size, type ].pack('na*') if type
         str << 'l' << [ val.size ].pack('N')
-        val.each{ |v| str << write(v, refs) }
+        val.each{ |v| str << write_object(v, refs) }
         str << 'z'  # list
       when Hash
         idx = refs[val.object_id]
@@ -118,8 +118,8 @@ module Hessian2
         str = 'M'
         str << 't' << [ type.size, type ].pack('na*') if type
         val.each do |k, v|
-          str << write(k, refs)
-          str << write(v, refs)
+          str << write_object(k, refs)
+          str << write_object(v, refs)
         end
         str << 'z'  # map
       else  # covert val to hash
@@ -138,7 +138,7 @@ module Hessian2
           end
         end
 
-        write(h, refs, chunks, type)
+        write_object(h, refs, chunks, type)
       end
     end
 
