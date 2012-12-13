@@ -1,7 +1,7 @@
 lib_path = File.expand_path('../../lib', __FILE__)
 $:.unshift(lib_path)
 require 'sinatra'
-require './person'
+require ::File.expand_path('../person',  __FILE__)
 
 get '/' do
   status 405

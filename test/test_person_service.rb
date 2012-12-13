@@ -4,58 +4,64 @@ require 'hessian2'
 
 c1 = Hessian2::Client.new('http://127.0.0.1:9292/person')
 
-begin puts c1.undefined_method; rescue Hessian2::Exception => e; puts "#{e.message}"; end
-begin puts c1.multi_set; rescue Hessian2::Exception => e; puts "#{e.message}"; end
+begin puts c1.undefined_method; rescue Hessian2::Fault => e; puts "#{e.message}"; end
+begin puts c1.multi_set; rescue Hessian2::Fault => e; puts "#{e.message}"; end
 
 person = c1.get_person
-nil1 = c1.get_nil.inspect
+wperson = Hessian2::TypeWrapper.new('example.Person', person)
+null1 = c1.get_null.inspect
 true1 = c1.get_true
 false1 = c1.get_false
-fixnum1 = c1.get_fixnum
-bignum1 = c1.get_long
-bignum2 = c1.get_bignum
-float1 = c1.get_float
-time1 = c1.get_time
+int1 = c1.get_int
+wlong1 = c1.get_wlong
+long1 = c1.get_long
+double1 = c1.get_double
+date1 = c1.get_date
 str1 = c1.get_string
-hstr1 = c1.get_huge_string
-arr1 = c1.get_array
-rarr1 = c1.get_array_refer
-hash1 = c1.get_hash
-rhash1 = c1.get_hash_refer
+hstr1 = c1.get_hstring
+list1 = c1.get_list
+rlist1 = c1.get_rlist
+map1 = c1.get_map
+rmap1 = c1.get_rmap
 bin1 = c1.get_binary
-hbin1 = c1.get_huge_binary
+hbin1 = c1.get_hbinary
 
 puts person
-puts nil1.inspect
+puts null1.inspect
 puts true1
 puts false1
-puts fixnum1
-puts bignum1
-puts bignum2
-puts float1
-puts time1
+puts int1
+puts wlong1
+puts long1
+puts double1
+puts date1
 puts str1
 puts hstr1.size
-puts arr1
-puts rarr1
-puts hash1
-puts rhash1
+puts list1
+puts rlist1
+puts map1
+puts rmap1
 puts bin1
 puts hbin1.size
 
-c1.multi_set(person, 
-  nil1, 
-  true1, 
-  false1, 
-  fixnum1, 
-  Hessian2::TypeWrapper.new('L', bignum1), 
-  bignum2, 
-  time1, 
-  str1, 
-  hstr1, 
-  arr1,
-  rarr1, 
-  hash1, 
-  rhash1, 
-  Hessian2::TypeWrapper.new('B', bin1), 
+c1.multi_set(wperson,
+  [wperson, wperson],
+  [1 => wperson, 2 => wperson],
+  null1,
+  true1,
+  false1,
+  int1,
+  Hessian2::TypeWrapper.new('L', int1),
+  long1,
+  double1,
+  date1,
+  str1,
+  hstr1,
+  list1,
+  list1,
+  rlist1,
+  map1,
+  map1,
+  rmap1,
+  Hessian2::TypeWrapper.new('B', bin1),
   Hessian2::TypeWrapper.new('B', hbin1))

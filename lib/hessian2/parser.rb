@@ -1,4 +1,4 @@
-require 'hessian2/exception'
+require 'hessian2/fault'
 
 module Hessian2
   module Parser
@@ -31,7 +31,7 @@ module Hessian2
         message = parse_object(data)
         # parse_object(data)
         # detail = parse_object(data)
-        raise Exception.new, code == 'RuntimeError' ? message : "#{code} - #{message}"
+        raise Fault.new, code == 'RuntimeError' ? message : "#{code} - #{message}"
       when 'N' # null
         nil
       when 'T' # true
@@ -62,14 +62,13 @@ module Hessian2
         end
       when 'B', 'b' # binary
         len = data.slice!(0, 2).unpack('n')[0]
-
         chunk = data.slice!(0, len)
         chunks << chunk
         
         if t == 'b'
           parse_object(data, refs, chunks)
         else
-          str = chunks.flatten.join
+          str = chunks.join
           chunks.clear
           str
         end

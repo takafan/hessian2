@@ -51,13 +51,12 @@ module Hessian2
             chunks.join # xml
           end
         when 'B', 'b' # declare string as binary
-          [ 'B', obj.size ].pack('an') << obj
           if obj.size > CHUNK_SIZE
             chunk = obj.slice!(0, CHUNK_SIZE)
             chunks << [ 'b', CHUNK_SIZE ].pack('an') << chunk
             write_object(TypeWrapper.new('B', obj), refs, chunks)
           else
-            chunks << [ 'B', obj.size ].pack('an') << obj
+            chunks << [ 'B', obj.bytesize ].pack('an') << obj
             chunks.join # binary
           end
         else  # type for list, map
