@@ -57,6 +57,10 @@ class Person
     [a, a]
   end
 
+  def set_hlist(hlist)
+    hlist
+  end
+
   def get_map
     {a: 1, 'b' => 2}
   end

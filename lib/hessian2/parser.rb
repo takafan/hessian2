@@ -5,9 +5,11 @@ module Hessian2
 
     def parse(data)
       rets, refs, chunks = [], [], []
+      t0 = Time.new
       while data[0] != 'z'
         rets << parse_object(data, refs, chunks)
       end
+      puts "parse time: #{Time.new - t0}"
       rets.size == 1 ? rets.first : rets
     end
 
