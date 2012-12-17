@@ -1,4 +1,5 @@
-# http://hessian.caucho.com/doc/hessian-1.0-spec.xtp
+# http://hessian.caucho.com/doc/hessian-ws.html
+# http://hessian.caucho.com/doc/hessian-serialization.html
 require 'hessian2/client'
 require 'hessian2/fault'
 require 'hessian2/handler'

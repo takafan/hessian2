@@ -1,8 +1,12 @@
 lib_path = File.expand_path('../../lib', __FILE__)
 $:.unshift(lib_path)
 require 'hessian2'
+require ::File.expand_path('../profile', __FILE__)
 
-c1 = Hessian2::Client.new('http://127.0.0.1:9292/person')
+include Hessian2::Parser
+include Hessian2::Writer
+
+# c1 = Hessian2::Client.new('http://127.0.0.1:9292/person')
 
 # begin puts c1.undefined_method; rescue Hessian2::Fault => e; puts "#{e.message}"; end
 # begin puts c1.multi_set; rescue Hessian2::Fault => e; puts "#{e.message}"; end
@@ -71,7 +75,18 @@ c1 = Hessian2::Client.new('http://127.0.0.1:9292/person')
 # puts c1.set_hlist(arr).size
 # puts Time.new - t0
 
-c2 = Hessian2::Client.new('http://192.168.3.161:8310/passport/hessian/userProfileService')
-arr = (1000000..1000200).to_a
-c2.getProfileByUids(arr).size
+# c2 = Hessian2::Client.new('http://192.168.3.220:8100/passport/hessian/userProfileService')
+# arr = (1..235).to_a
+# t0 = Time.new
+# profiles = c2.getProfileByUids(arr)
+# puts "all: #{Time.new - t0}"
+# puts profiles.size
 
+profiles = Profile.where(true).limit(200).map{|p| p.serializable_hash}
+puts profiles.class
+puts profiles.size
+enprofiles = reply_value(profiles)
+t0 = Time.new
+deprofiles = parse(enprofiles)
+puts "deprofiles: #{Time.new - t0}"
+puts deprofiles.size
