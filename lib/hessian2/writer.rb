@@ -62,24 +62,23 @@ module Hessian2
           BC_DOUBLE_ZERO  
         when 1                        # 4.4.2.  Compact: double one
           BC_DOUBLE_ONE  
-        when -128..127                # 4.4.3.  Compact: double octet
-          [ BC_DOUBLE, val ].pack('ac') 
-        when -32768..32767            # 4.4.4.  Compact: double short
-          [ BC_DOUBLE, val ].pack('as>')  
+        when -0x80...0x80                # 4.4.3.  Compact: double octet
+          [ BC_DOUBLE_BYTE, val ].pack('cc')
+        when -0x8000...0x8000            # 4.4.4.  Compact: double short
+          [ BC_DOUBLE_SHORT, (val >> 8), val ].pack('ccc')
         when -2147483648..2147483647  # 4.4.5.  Compact: double float
-          [ BC_DOUBLE, val ].pack('al>')  
+          [ BC_DOUBLE, val ].pack('al>')
         else
           [ BC_DOUBLE, val ].pack('aG') 
         end
-      when Fixnum             # 4.5.  int
+      when Fixnum                           # 4.5.  int
         case val
-        when INT_DIRECT_MIN..INT_DIRECT_MAX         # 4.5.1.  Compact: single octet integers
+        when INT_DIRECT_MIN..INT_DIRECT_MAX # 4.5.1.  Compact: single octet integers
           [ val + BC_INT_ZERO ].pack('c')
-        when INT_BYTE_MIN..INT_BYTE_MAX      # 4.5.2.  Compact: two octet integers
-          [ BC_INT, val ].pack('as>')
-        when -262144..262143  # 4.5.3.  Compact: three octet integers
-          b2, b2r = val / 65536, val % 65536
-          [ BC_INT, b2, b2r ].pack('acs>')
+        when INT_BYTE_MIN..INT_BYTE_MAX     # 4.5.2.  Compact: two octet integers
+          [ BC_INT_BYTE_ZERO + (val >> 8), val ].pack('cc')
+        when INT_SHORT_MIN..INT_SHORT_MAX   # 4.5.3.  Compact: three octet integers
+          [ BC_INT_SHORT_ZERO + (val >> 16), (val >> 8), val].pack('ccc')
         else
           [ BC_INT, val ].pack('al>')  
         end
