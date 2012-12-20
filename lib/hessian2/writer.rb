@@ -1,15 +1,14 @@
-# com.caucho.hessian.io Hessian2Output
 require 'hessian2/constants'
 
 module Hessian2
   module Writer
 
     def call(method, args)
-      refs = {}
+      vrefs, crefs, trefs = {}, {}, {}
       out = [ 'H', '2', '0', 'C' ].pack('ahha')
-      out << [method.size].pack('C') << method
-      out << [args.size].pack('C')
-      args.each { |arg| out << write_val(arg, refs) }
+      out << [ method.size ].pack('C') << method
+      out << [ args.size ].pack('C')
+      args.each { |arg| out << write_val(arg, vrefs, crefs, trefs) }
       out
     end
 
@@ -19,139 +18,186 @@ module Hessian2
       out
     end
 
-    def fault(e)  # TODO
-      clbl, mlbl, dlbl = 'code', 'message', 'detail'
-      code, message, detail = e.class.to_s, e.message, e.backtrace
-      out = [ 'F' ].pack('a')
-      out << [ 'H' ].pack('a')
-      out << [ clbl.size ].pack('n') << clbl
-      out << [ code.size ].pack('n') << write_val(code)
-      out << [ mlbl.size ].pack('n') << mlbl
-      out << [ message.size ] write_val(message)
-      out << [ dlbl.size ].pack('n') << dlbl
-      out << write_val(backtrace)
-      out << 'Z'
+    def write_fault(e)
+      val = {
+        code: e.class.to_s,
+        message: e.message,
+        detail: e.backtrace }
+      [ 'F' ].pack('a') << write_val(val)
     end
 
     private
-    def write_val(val, refs = {}, type = nil)
+    def write_val(val, vrefs = {}, crefs = {}, trefs = {}, type = nil)
       case val
-      when TypeWrapper # TODO
-        obj, hessian_type = val.object, val.hessian_type
-        case hessian_type
-        when 'L', 'Long', 'long'  # declare fixnum as long
-          [ 'L', obj ].pack('aq>')  # long
-        when 'B', 'b' # declare string as binary
+      when TypeWrapper
+        val, type = val.object, val.hessian_type
+        case type
+        when 'L', 'Long', 'long'  # declare as long
+          case val
+          when LONG_DIRECT_MIN..LONG_DIRECT_MAX  # single octet longs
+            [ BC_LONG_ZERO + val ].pack('c')
+          when LONG_BYTE_MIN..LONG_BYTE_MAX  # two octet longs
+            [ BC_LONG_BYTE_ZERO + (val >> 8), val ].pack('cc')
+          when LONG_SHORT_MIN..LONG_SHORT_MAX  # three octet longs
+            [ BC_LONG_SHORT_ZERO + (val >> 16), (val >> 8), val ].pack('ccc')
+          when -0x80_000_000..0x7f_fff_fff  # four octet longs
+            [ BC_LONG_INT, val ].pack('al>')
+          else  # long
+            [ BC_LONG, val ].pack('aq>')
+          end
+        when 'B', 'b' # declare as bin
           write_binary(val)
-        else  # type for list, map
-          write_val(obj, refs, hessian_type)
+        else  # declare a class definition for an object, or a type for list/map elements
+          write_val(val, vrefs, crefs, trefs, type)
         end
-      when TrueClass  # 4.2.  boolean
-        'T'           # true
-      when FalseClass # 4.2.  boolean
-        'F'           # false
+      when TrueClass
+        'T'  # true
+      when FalseClass
+        'F'  # false
       when Time 
-        if val.sec == 0
-          [ BC_DATE_MINUTE, val.to_i / 10 ].pack('al>') # 4.3.1.  Compact: date in minutes
+        if val.sec == 0  # date in minutes
+          [ BC_DATE_MINUTE, val.to_i / 10 ].pack('al>')  
         else
-          [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('aQ>') # 4.3.  date
+          [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('aQ>')  # date
         end
-      when Float                      # 4.4.  double
-        case val
-        when 0                        # 4.4.1.  Compact: double zero
-          BC_DOUBLE_ZERO  
-        when 1                        # 4.4.2.  Compact: double one
-          BC_DOUBLE_ONE  
-        when -0x80...0x80                # 4.4.3.  Compact: double octet
-          [ BC_DOUBLE_BYTE, val ].pack('cc')
-        when -0x8000...0x8000            # 4.4.4.  Compact: double short
-          [ BC_DOUBLE_SHORT, (val >> 8), val ].pack('ccc')
-        when -2147483648..2147483647  # 4.4.5.  Compact: double float
-          [ BC_DOUBLE, val ].pack('al>')
-        else
-          [ BC_DOUBLE, val ].pack('aG') 
+      when Float
+        return BC_DOUBLE_ZERO if val == 0  # double zero
+        return BC_DOUBLE_ONE if val == 1  # double one
+        if val.to_i == val
+          return [ BC_DOUBLE_BYTE, val ].pack('cc') if (-0x80..0x7f).include?(val)  # double octet
+          return [ BC_DOUBLE_SHORT, (val >> 8), val ].pack('ccc') if (-0x8000..0x7fff).include?(val)  # double short
+          return [ BC_DOUBLE_MILL, (val >> 24), (val >> 16), (val >> 8), val ].pack('acccc') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
         end
-      when Fixnum                           # 4.5.  int
-        case val
-        when INT_DIRECT_MIN..INT_DIRECT_MAX # 4.5.1.  Compact: single octet integers
-          [ val + BC_INT_ZERO ].pack('c')
-        when INT_BYTE_MIN..INT_BYTE_MAX     # 4.5.2.  Compact: two octet integers
-          [ BC_INT_BYTE_ZERO + (val >> 8), val ].pack('cc')
-        when INT_SHORT_MIN..INT_SHORT_MAX   # 4.5.3.  Compact: three octet integers
-          [ BC_INT_SHORT_ZERO + (val >> 16), (val >> 8), val].pack('ccc')
-        else
-          [ BC_INT, val ].pack('al>')  
-        end
-      when Array  # TODO 4.6.  list
-        idx = refs[val.object_id]
-        return [ 'R', idx ].pack('aN') if idx
-
-        refs[val.object_id] = refs.size
-      
-        str = 'V'
-        str << 't' << [ type.size, type ].pack('na*') if type
-        str << 'l' << [ val.size ].pack('N')
-        val.each{ |v| str << write_object(v, refs) }
-        str << 'z'  
-      when Bignum   # 4.7.  long
-        case val
-        when -8..15 # 4.7.1.  Compact: single octet longs
-          [ BC_LONG, val ].pack('ac')
-        when -2048..2047  # 4.7.2.  Compact: two octet longs
-          [ BC_LONG, val ].pack('as>')
-        when -262144..262143  # 4.7.3.  Compact: three octet longs
-          b2, b2r = val / 65536, val % 65536
-          [ BC_LONG, b2, b2r ].pack('acs>')
-        when -4294967296..4294967295  # 4.7.4.  Compact: four octet longs
-          [ BC_LONG, val ].pack('al>')
-        else
-          [ BC_LONG, val ].pack('aq>')  # long
-        end
-      when Hash   # TODO 4.8.  map
-        idx = refs[val.object_id]
-        return [ 'R', idx ].pack('aN') if idx
+        [ BC_DOUBLE, val ].pack('aG')  # double
+      when Fixnum
+        write_int(val)
+      when Array
+        idx = vrefs[val.object_id]
+        return write_ref(idx) if idx
+        vrefs[val.object_id] = vrefs.size  # add a value reference
         
-        refs[val.object_id] = refs.size
-
-        str = 'M'
-        str << 't' << [ type.size, type ].pack('na*') if type
-        val.each do |k, v|
-          str << write_val(k, refs)
-          str << write_val(v, refs)
-        end
-        str << 'z'
-      when NilClass # 4.9.  null
-        BC_NULL
-      when String   # 4.12.  string
-        write_string(val)
-      when Symbol
-        write_string(val.to_s)
-      else  # 4.10.  object
-        unless type 
-          # map ruby module to java package
-          arr = val.class.to_s.split('::')
-          if arr.size > 1
-            klass = arr.pop
-            type = arr.map{|m| m.downcase}.join('.') << ".#{klass}"
+        if type
+          if trefs.include?(type)
+            tstr = write_int(trefs[type])
           else
-            type = arr.first
+            trefs[type] = trefs.size  # add a type
+            tstr = write_string(type)
+          end
+
+          length = val.size
+          if length <= LIST_DIRECT_MAX  # [x70-77] type value*
+            str = [ BC_LIST_DIRECT + length ].pack('C')
+            str << tstr
+          else  # 'V' type int value*
+            str = BC_LIST_FIXED
+            str << tstr
+            str << write_val(length)
+          end
+        else
+          length = val.size
+          if length <= LIST_DIRECT_MAX  # [x78-7f] value*
+            str = [ BC_LIST_DIRECT_UNTYPED + length ].pack('C')
+          else  # x58 int value*
+            str = [ BC_LIST_FIXED_UNTYPED ].pack('C')
+            str << write_val(length)
           end
         end
 
-        h = {}.tap do |h|
-          val.instance_variables.each { |var| h[var.to_s.delete("@")] = val.instance_variable_get(var) }
+        val.each do |v|
+          str << write_val(v, vrefs, crefs, trefs)
         end
 
-        str = [ BC_OBJECT_DEF, type.size ].pack('aC') << type
-        str << [ h.keys.size ].pack()
-        
+        str
+      when Bignum
+        if (-0x80_000_000..0x7f_fff_fff).include?(val)  # four octet longs
+          [ BC_LONG_INT, val ].pack('al>')
+        else  # long
+          [ BC_LONG, val ].pack('aq>')
+        end
+      when Hash
+        idx = vrefs[val.object_id]
+        return write_ref(idx) if idx
+        vrefs[val.object_id] = vrefs.size  # add a value reference
 
-        write_val(h, refs, type)
+        if type
+          if trefs.include?(type)
+            tstr = write_int(trefs[type])
+          else
+            trefs[type] = trefs.size  # add a type
+            tstr = write_string(type)
+          end
+
+          str = BC_MAP
+          str << tstr
+        else
+          str = BC_MAP_UNTYPED
+        end
+
+        val.each do |k, v|
+          str << write_val(k, vrefs, crefs, trefs)
+          str << write_val(v, vrefs, crefs, trefs)
+        end
+
+        str << BC_END
+      when NilClass
+        BC_NULL  # null
+      when String
+        write_string(val)
+      when Symbol
+        write_string(val.to_s)
+      else
+        idx = vrefs[val.object_id]
+        return write_ref(idx) if idx
+        vrefs[val.object_id] = vrefs.size  # add a value reference
+
+        type = val.class.to_s unless type
+        vars = val.instance_variables
+
+        if crefs.include?(type)
+          ref = crefs[type]
+          str = write_int(ref)
+        else
+          ref = crefs[type] = crefs.size  # add a class definition
+          str = BC_OBJECT_DEF << write_string(type) << write_int(vars.size)
+          vars.each do |sym|
+            str << write_string(sym.to_s[1..-1])
+          end
+        end
+
+        if crefs[type] <= OBJECT_DIRECT_MAX
+          str << [ BC_OBJECT_DIRECT + ref ].pack('C')
+        else
+          str << BC_OBJECT << write_int(ref)
+        end
+        
+        vars.each do |sym|
+          str << write_val(val.instance_variable_get(sym), vrefs, crefs, trefs)
+        end
+
+        str
       end
-    end 
+    end
+
+    def write_ref(val)
+      BC_REF << write_int(val)
+    end
+
+    def write_int(val)
+      case val
+      when INT_DIRECT_MIN..INT_DIRECT_MAX  # single octet integers
+        [ BC_INT_ZERO + val ].pack('c')
+      when INT_BYTE_MIN..INT_BYTE_MAX  # two octet integers
+        [ BC_INT_BYTE_ZERO + (val >> 8), val ].pack('cc')
+      when INT_SHORT_MIN..INT_SHORT_MAX  # three octet integers
+        [ BC_INT_SHORT_ZERO + (val >> 16), (val >> 8), val].pack('ccc')
+      else  # integer
+        [ BC_INT, val ].pack('al>')
+      end
+    end
 
     def write_string(val, chunks = [])
-      while val.size > 0x8000 # 32768
+      length = val.size
+      while length > 0x8000
         chunk = val.slice!(0, 0x8000)
         if chunk.ascii_only?
           chunks << [ BC_STRING_CHUNK, 0x8000 ].pack('an') << chunk
@@ -162,17 +208,23 @@ module Hessian2
         write_string(val, chunks)
       end
 
-      if val.size < 32
+      if length <= STRING_DIRECT_MAX
         if val.ascii_only? 
-          chunks << [ val.size ].pack('C') << val 
+          chunks << [ BC_STRING_DIRECT + length ].pack('C') << val 
         else 
-          chunks << [ val.size, val.unpack('U*') ].flatten.pack('CU*')
+          chunks << [ BC_STRING_DIRECT + length, val.unpack('U*') ].flatten.pack('CU*')
+        end
+      elsif length <= STRING_SHORT_MAX
+        if val.ascii_only? 
+          chunks << [ BC_STRING_SHORT + (length >> 8), length ].pack('CC') << val
+        else
+          chunks << [ BC_STRING_SHORT + (length >> 8), length, val.unpack('U*') ].flatten.pack('CCU*')
         end
       else
         if val.ascii_only?
-          chunks << [ BC_STRING, val.size ].pack('an') << val
+          chunks << [ BC_STRING, length ].pack('an') << val
         else
-          chunks << [ BC_STRING, val.size, val.unpack('U*') ].flatten.pack('anU*')
+          chunks << [ BC_STRING, length, val.unpack('U*') ].flatten.pack('anU*')
         end
       end
 
@@ -180,12 +232,19 @@ module Hessian2
     end
 
     def write_binary(val, chunks = [])
-      if val.size > 0x8000
+      length = val.size
+      while length > 0x8000
         chunk = val.slice!(0, 0x8000)
-        chunks << [ 'b', 0x8000 ].pack('an') << chunk
+        chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('an') << chunk
         write_binary(val, chunks)
+      end
+
+      if length <= BINARY_DIRECT_MAX
+        chunks << [ BC_BINARY_DIRECT + length ].pack('C') << val 
+      elsif length <= BINARY_SHORT_MAX
+        chunks << [ BC_BINARY_SHORT + (length >> 8), length ].pack('CC') << val
       else
-        chunks << [ 'B', val.bytesize ].pack('an') << val
+        chunks << [ BC_BINARY, length ].pack('an') << val
       end
 
       chunks.join
