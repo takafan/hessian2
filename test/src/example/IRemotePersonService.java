@@ -17,7 +17,7 @@ public interface IRemotePersonService {
 	public String get_string();
 	public String get_hstring();
 	public String[] get_list();
-	public ArrayList<ArrayList<String>> get_rlist();
+	public ArrayList<String[]> get_rlist();
 	public Map<String, Integer> get_map();
 	public ArrayList<Map<String, Integer>> get_rmap();
 	public byte[] get_binary();
@@ -43,4 +43,14 @@ public interface IRemotePersonService {
 			ArrayList<Map<String, Integer>> rmap1,
 			byte[] bin1,
 			byte[] hbin1);
+	
+	public void set_null(Object obj);
+	public void set_true(boolean true1);
+	public void set_false(boolean false1);
+	public void set_int(int int1);
+	public void set_long(long long1);
+	public void set_wlong(long wlong1);
+	public void set_double(double double1);
+	public void set_date(Date date1);
+	
 }

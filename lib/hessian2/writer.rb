@@ -2,13 +2,15 @@ require 'hessian2/constants'
 
 module Hessian2
   module Writer
+    include Constants
 
     def call(method, args)
       vrefs, crefs, trefs = {}, {}, {}
       out = [ 'H', '2', '0', 'C' ].pack('ahha')
-      out << [ method.size ].pack('C') << method
-      out << [ args.size ].pack('C')
+      out << write_string(method)
+      out << write_int(args.size)
       args.each { |arg| out << write_val(arg, vrefs, crefs, trefs) }
+      puts out
       out
     end
 
@@ -74,13 +76,13 @@ module Hessian2
       when Array
         idx = vrefs[val.object_id]
         return write_ref(idx) if idx
-        vrefs[val.object_id] = vrefs.size  # add a value reference
+        vrefs[val.object_id] = vrefs.size  # store a value reference
         
         if type
           if trefs.include?(type)
             tstr = write_int(trefs[type])
           else
-            trefs[type] = trefs.size  # add a type
+            trefs[type] = trefs.size  # store a type
             tstr = write_string(type)
           end
 
@@ -117,13 +119,13 @@ module Hessian2
       when Hash
         idx = vrefs[val.object_id]
         return write_ref(idx) if idx
-        vrefs[val.object_id] = vrefs.size  # add a value reference
+        vrefs[val.object_id] = vrefs.size  # store a value reference
 
         if type
           if trefs.include?(type)
             tstr = write_int(trefs[type])
           else
-            trefs[type] = trefs.size  # add a type
+            trefs[type] = trefs.size  # store a type
             tstr = write_string(type)
           end
 
@@ -148,7 +150,7 @@ module Hessian2
       else
         idx = vrefs[val.object_id]
         return write_ref(idx) if idx
-        vrefs[val.object_id] = vrefs.size  # add a value reference
+        vrefs[val.object_id] = vrefs.size  # store a value reference
 
         type = val.class.to_s unless type
         vars = val.instance_variables
@@ -157,7 +159,7 @@ module Hessian2
           ref = crefs[type]
           str = write_int(ref)
         else
-          ref = crefs[type] = crefs.size  # add a class definition
+          ref = crefs[type] = crefs.size  # store a class definition
           str = BC_OBJECT_DEF << write_string(type) << write_int(vars.size)
           vars.each do |sym|
             str << write_string(sym.to_s[1..-1])

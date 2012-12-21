@@ -3,8 +3,8 @@ $:.unshift(lib_path)
 require 'hessian2'
 require ::File.expand_path('../profile', __FILE__)
 
-include Hessian2::Parser
-include Hessian2::Writer
+# include Hessian2::Parser
+# include Hessian2::Writer
 
 # c1 = Hessian2::Client.new('http://127.0.0.1:9292/person')
 
@@ -82,11 +82,22 @@ include Hessian2::Writer
 # puts "all: #{Time.new - t0}"
 # puts profiles.size
 
-profiles = Profile.where(true).limit(200).map{|p| p.serializable_hash}
-puts profiles.class
-puts profiles.size
-enprofiles = reply_value(profiles)
-t0 = Time.new
-deprofiles = parse(enprofiles)
-puts "deprofiles: #{Time.new - t0}"
-puts deprofiles.size
+# profiles = Profile.where(true).limit(200).map{|p| p.serializable_hash}
+# puts profiles.class
+# puts profiles.size
+# enprofiles = reply_value(profiles)
+# t0 = Time.new
+# deprofiles = parse(enprofiles)
+# puts "deprofiles: #{Time.new - t0}"
+# puts deprofiles.size
+
+c3 = Hessian2::Client.new('http://127.0.0.1:9001/person')
+
+#c3.set_null(nil)
+#c3.set_true(true)
+#c3.set_false(false)
+#c3.set_int(59)
+#c3.set_long(9876543210)
+#c3.set_wlong(Hessian2::TypeWrapper.new('L', 59))
+c3.set_double(59.59)
+c3.set_date(Time.new)
