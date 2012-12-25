@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 
-public interface IRemotePersonService {
+public interface IPersonService {
 	public Person get_person();
 	public Object get_null();
 	public boolean get_true();
@@ -52,5 +52,11 @@ public interface IRemotePersonService {
 	public void set_wlong(long wlong1);
 	public void set_double(double double1);
 	public void set_date(Date date1);
+	public void set_string(String str1);
+	public void set_hstring(String hstr1);
+	public void set_list(String[] list1);
+	public void set_map(Map<String, Integer> map1);
+	public void set_bin(byte[] bin1);
+	public void set_person(Person person);
 	
 }

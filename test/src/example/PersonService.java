@@ -5,13 +5,29 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+
 import com.caucho.hessian.server.HessianServlet;
 
-public class PersonService extends HessianServlet implements IRemotePersonService {
+public class PersonService extends HessianServlet implements IPersonService {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	
+	public static void main(String[] args) throws Exception {
+        Server server = new Server(9001);
+        ServletContextHandler context = new ServletContextHandler(
+        ServletContextHandler.SESSIONS);
+        server.setHandler(context);
+        ServletHolder servletHolder = new ServletHolder(new PersonService());
+        context.addServlet(servletHolder, "/person");
+        server.start();
+        server.join(); 
+
+    }
 	
 	public Person get_person()
 	{
@@ -209,4 +225,43 @@ public class PersonService extends HessianServlet implements IRemotePersonServic
 		System.out.println("set_date " + date1);
 		return;
 	}
+	
+	public void set_string(String string1)
+	{
+		System.out.println("set_string " + string1);
+		return;
+	}
+	
+	public void set_hstring(String hstr1)
+	{
+		System.out.println("set_hstring " + hstr1.length());
+		return;
+	}
+	
+	public void set_list(String[] list1)
+	{
+		System.out.println("set_list " + list1.length);
+		for (String str : list1) {
+			System.out.println("  " + str);
+		}
+		return;
+	}
+	
+	public void set_map(Map<String, Integer> map1)
+	{
+		System.out.println("set_map " + map1);
+		return;
+	}
+	
+	public void set_bin(byte[] bin1)
+	{
+		System.out.println("set_bin " + bin1.length);
+		return;
+	}
+	
+	public void set_person(Person person)
+	{
+		System.out.print("  " + person.name + ": " + person.age);
+	}
+	
 }

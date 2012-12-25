@@ -10,7 +10,7 @@ module Hessian2
       out << write_string(method)
       out << write_int(args.size)
       args.each { |arg| out << write_val(arg, vrefs, crefs, trefs) }
-      puts out
+      # puts out
       out
     end
 
@@ -32,47 +32,41 @@ module Hessian2
     def write_val(val, vrefs = {}, crefs = {}, trefs = {}, type = nil)
       case val
       when TypeWrapper
-        val, type = val.object, val.hessian_type
-        case type
-        when 'L', 'Long', 'long'  # declare as long
-          case val
-          when LONG_DIRECT_MIN..LONG_DIRECT_MAX  # single octet longs
-            [ BC_LONG_ZERO + val ].pack('c')
-          when LONG_BYTE_MIN..LONG_BYTE_MAX  # two octet longs
-            [ BC_LONG_BYTE_ZERO + (val >> 8), val ].pack('cc')
-          when LONG_SHORT_MIN..LONG_SHORT_MAX  # three octet longs
-            [ BC_LONG_SHORT_ZERO + (val >> 16), (val >> 8), val ].pack('ccc')
-          when -0x80_000_000..0x7f_fff_fff  # four octet longs
-            [ BC_LONG_INT, val ].pack('al>')
-          else  # long
-            [ BC_LONG, val ].pack('aq>')
-          end
-        when 'B', 'b' # declare as bin
-          write_binary(val)
-        else  # declare a class definition for an object, or a type for list/map elements
-          write_val(val, vrefs, crefs, trefs, type)
-        end
+        write_val(val.object, vrefs, crefs, trefs, val.hessian_type)
       when TrueClass
         'T'  # true
       when FalseClass
         'F'  # false
       when Time 
         if val.sec == 0  # date in minutes
-          [ BC_DATE_MINUTE, val.to_i / 10 ].pack('al>')  
+          [ BC_DATE_MINUTE, val.to_i / 10 ].pack('Cl>')  
         else
-          [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('aQ>')  # date
+          [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('CQ>')  # date
         end
       when Float
         return BC_DOUBLE_ZERO if val == 0  # double zero
         return BC_DOUBLE_ONE if val == 1  # double one
         if val.to_i == val
-          return [ BC_DOUBLE_BYTE, val ].pack('cc') if (-0x80..0x7f).include?(val)  # double octet
-          return [ BC_DOUBLE_SHORT, (val >> 8), val ].pack('ccc') if (-0x8000..0x7fff).include?(val)  # double short
-          return [ BC_DOUBLE_MILL, (val >> 24), (val >> 16), (val >> 8), val ].pack('acccc') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
+          return [ BC_DOUBLE_BYTE, val ].pack('Cc') if (-0x80..0x7f).include?(val)  # double octet
+          return [ BC_DOUBLE_SHORT, (val >> 8), val ].pack('Ccc') if (-0x8000..0x7fff).include?(val)  # double short
+          return [ BC_DOUBLE_MILL, (val >> 24), (val >> 16), (val >> 8), val ].pack('Ccccc') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
         end
         [ BC_DOUBLE, val ].pack('aG')  # double
       when Fixnum
-        write_int(val)
+        if type and %w[ L Long long ].include?(type)
+          case val
+          when LONG_DIRECT_MIN..LONG_DIRECT_MAX  # single octet longs
+            [ BC_LONG_ZERO + val.object ].pack('c')
+          when LONG_BYTE_MIN..LONG_BYTE_MAX  # two octet longs
+            [ BC_LONG_BYTE_ZERO + (val.object >> 8), val.object ].pack('cc')
+          when LONG_SHORT_MIN..LONG_SHORT_MAX  # three octet longs
+            [ BC_LONG_SHORT_ZERO + (val.object >> 16), (val.object >> 8), val.object ].pack('ccc')
+          else  # four octet longs
+            [ BC_LONG_INT, val.object ].pack('Cl>')
+          end
+        else
+          write_int(val)
+        end
       when Array
         idx = vrefs[val.object_id]
         return write_ref(idx) if idx
@@ -144,7 +138,11 @@ module Hessian2
       when NilClass
         BC_NULL  # null
       when String
-        write_string(val)
+        if type and %w[ B b ].include?(type)
+          write_binary(val)
+        else
+          write_string(val)
+        end
       when Symbol
         write_string(val.to_s)
       else
@@ -199,7 +197,7 @@ module Hessian2
 
     def write_string(val, chunks = [])
       length = val.size
-      while length > 0x8000
+      if length > 0x8000
         chunk = val.slice!(0, 0x8000)
         if chunk.ascii_only?
           chunks << [ BC_STRING_CHUNK, 0x8000 ].pack('an') << chunk
@@ -235,7 +233,7 @@ module Hessian2
 
     def write_binary(val, chunks = [])
       length = val.size
-      while length > 0x8000
+      if length > 0x8000
         chunk = val.slice!(0, 0x8000)
         chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('an') << chunk
         write_binary(val, chunks)

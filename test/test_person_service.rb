@@ -1,3 +1,5 @@
+# -*- encoding: utf-8 -*-
+
 lib_path = File.expand_path('../../lib', __FILE__)
 $:.unshift(lib_path)
 require 'hessian2'
@@ -99,5 +101,12 @@ c3 = Hessian2::Client.new('http://127.0.0.1:9001/person')
 #c3.set_int(59)
 #c3.set_long(9876543210)
 #c3.set_wlong(Hessian2::TypeWrapper.new('L', 59))
-c3.set_double(59.59)
-c3.set_date(Time.new)
+#c3.set_double(59.59)
+#c3.set_date(Time.new)
+#c3.set_string('金玉彬')
+#c3.set_hstring('金玉彬' * 30000)
+#c3.set_list(['金玉彬', 'taka'])
+#c3.set_map('金玉彬' => 1)
+#c3.set_bin(Hessian2::TypeWrapper.new('B', [59.59].pack('G')))
+#c3.set_bin(Hessian2::TypeWrapper.new('B', IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))))
+#c3.set_person(Hessian2::TypeWrapper.new('example.Person', {name: '金玉彬', age: 18}))
