@@ -47,7 +47,8 @@ module Hessian2
         if val.to_i == val
           return [ BC_DOUBLE_BYTE, val ].pack('Cc') if (-0x80..0x7f).include?(val) # double octet
           return [ BC_DOUBLE_SHORT, (val >> 8), val ].pack('Ccc') if (-0x8000..0x7fff).include?(val) # double short
-          return [ BC_DOUBLE_MILL, (val >> 24), (val >> 16), (val >> 8), val ].pack('Ccccc') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
+          # return [ BC_DOUBLE_MILL, (val >> 24), (val >> 16), (val >> 8), val ].pack('Ccccc') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
+          return [ BC_DOUBLE_MILL, val ].pack('Cg') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
         end
         [ BC_DOUBLE, val ].pack('CG') # double
       when Fixnum
