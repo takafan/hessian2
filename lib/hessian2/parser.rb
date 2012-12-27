@@ -28,7 +28,7 @@ module Hessian2
       end
     end
 
-    def parse_object(data, vrefs = [], crefs = [], trefs = [])
+    def parse_object(data, vrefs = [], crefs = [])
       c = data.slice!(0).unpack('C')[0]
       case c
       when 0x00..0x1f
@@ -64,14 +64,13 @@ module Hessian2
         cut_binary(data)
       when 0x43
         # object type definition ('C')
-        klass = parse_object(data, vrefs, crefs, trefs)
-        crefs[klass] = crefs.size
-
-        attrc = parse_object(data, vrefs, crefs, trefs)
-        attrc.times do
-          parse_object(data, vrefs, crefs, trefs)
+        parse_object(data) #=> class name
+        attrs = []
+        parse_object(data).times do
+          attrs << parse_object(data, vrefs, crefs)
         end
-        parse_object(data, vrefs, crefs, trefs)
+        crefs << attrs
+        parse_object(data, vrefs, crefs)
       when 0x44
         # 64-bit IEEE encoded double ('D')
         data.slice!(0, 8).unpack('G')[0]
@@ -80,7 +79,13 @@ module Hessian2
         false
       when 0x48
         # untyped map ('H')
-        # TODO
+        val = {}
+        while data[0] != 'Z'
+          val[parse_object(data)] = parse_object(data, vrefs, crefs)
+        end
+        vrefs << val # store a value reference
+        data.slice!(0) #=> 'Z'
+        val
       when 0x49
         # 32-bit signed integer ('I')
         data.slice!(0, 4).unpack('l>')[0]
@@ -97,13 +102,25 @@ module Hessian2
         data.slice!(0, 8).unpack('q>')[0]
       when 0x4d
         # map with type ('M')
-        # TODO
+        parse_object(data) #=> type
+        val = {}
+        while data[0] != 'Z'
+          val[parse_object(data)] = parse_object(data, vrefs, crefs)
+        end
+        vrefs << val # store a value reference
+        data.slice!(0) #=> 'Z'
+        val
       when 0x4e
         # null ('N')
         nil
       when 0x4f
         # object instance ('O')
-        # TODO
+        val = {}
+        attrs = crefs[parse_object(data)]
+        attrs.each do |a|
+          val[a] = parse_object(data, vrefs, crefs)
+        end
+        val
       when 0x51
         # reference to map/list/object - integer ('Q')
         vrefs[parse_object(data)]
@@ -125,21 +142,44 @@ module Hessian2
         true
       when 0x55
         # variable-length list/vector ('U')
-        # TODO
+        parse_object(data) #=> type
+
+        val = []
+        while data[0] != 'Z'
+          val << parse_object(data, vrefs, crefs)
+        end
+        vrefs << val # store a value reference
+        data.slice!(0) #=> 'Z'
+        val
       when 0x56
         # fixed-length list/vector ('V')
-        # TODO
+        parse_object(data) #=> type
+        val = []
+        parse_object(data, vrefs, crefs).times do
+          val << parse_object(data, vrefs, crefs)
+        end
+        vrefs << val # store a value reference
+        val
       when 0x57
         # variable-length untyped list/vector ('W')
-        # TODO
+        val = []
+        while data[0] != 'Z'
+          val << parse_object(data, vrefs, crefs)
+        end
+        vrefs << val # store a value reference
+        data.slice!(0) #=> 'Z'
+        val
       when 0x58
         # fixed-length untyped list/vector ('X')
-        # TODO
+        val = []
+        parse_object(data).times do
+          val << parse_object(data, vrefs, crefs)
+        end
+        vrefs << val # store a value reference
+        val
       when 0x59
         # long encoded as 32-bit int ('Y')
         data.slice!(0, 4).unpack('l>')[0]
-      # when 0x5a
-      #   # list/map terminator ('Z')
       when 0x5b
         # double 0.0
         0
@@ -158,26 +198,51 @@ module Hessian2
         data.slice!(0, 4).unpack('g')[0]
       when 0x60..0x6f
         # object with direct type
+        val = {}
+        attrs = crefs[c - BC_OBJECT_DIRECT]
+        attrs.each do |a|
+          val[a] = parse_object(data, vrefs, crefs)
+        end
+        val
       when 0x70..0x77
         # fixed list with direct length
+        parse_object(data) #=> type
+        val = []
+        (c - BC_LIST_DIRECT).times do
+          val << parse_object(data, vrefs, crefs)
+        end
+        vrefs << val # store a value reference
+        val
       when 0x78..0x7f
         # fixed untyped list with direct length
+        val = []
+        (c - BC_LIST_DIRECT_UNTYPED).times do
+          val << parse_object(data, vrefs, crefs)
+        end
+        vrefs << val # store a value reference
+        val
       when 0x80..0xbf
         # one-octet compact int (-x10 to x3f, x90 is 0)
+        c - BC_INT_ZERO
       when 0xc0..0xcf
         # two-octet compact int (-x800 to x7ff)
+        ((c - BC_INT_BYTE_ZERO) << 8) + data.slice!(0).unpack('c')
       when 0xd0..0xd7
         # three-octet compact int (-x40000 to x3ffff)
+        b1, b0 = data.slice!(0, 2).unpack('cc')
+        ((c - BC_INT_SHORT_ZERO) << 16) + (b1 << 8) + b0
       when 0xd8..0xef
         # one-octet compact long (-x8 to xf, xe0 is 0)
+        c - BC_LONG_ZERO
       when 0xf0..0xff
         # two-octet compact long (-x800 to x7ff, xf8 is 0)
-      
+        ((c - BC_LONG_BYTE_ZERO) << 8) + data.slice!(0).unpack('c')
       else
         raise Fault.new, "'#{c}' not implemented"
       end
     end
 
+    private
     def cut_string(data)
       len = data.slice!(0, 2).unpack('n')[0]
       data.slice!(0, data.unpack("U#{len}").pack('U*').bytesize)
@@ -189,5 +254,3 @@ module Hessian2
 
   end 
 end
-
-

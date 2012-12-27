@@ -47,7 +47,6 @@ module Hessian2
         if val.to_i == val
           return [ BC_DOUBLE_BYTE, val ].pack('Cc') if (-0x80..0x7f).include?(val) # double octet
           return [ BC_DOUBLE_SHORT, (val >> 8), val ].pack('Ccc') if (-0x8000..0x7fff).include?(val) # double short
-          # return [ BC_DOUBLE_MILL, (val >> 24), (val >> 16), (val >> 8), val ].pack('Ccccc') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
           return [ BC_DOUBLE_MILL, val ].pack('Cg') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
         end
         [ BC_DOUBLE, val ].pack('CG') # double
@@ -60,7 +59,7 @@ module Hessian2
             [ BC_LONG_BYTE_ZERO + (val.object >> 8), val.object ].pack('cc')
           when LONG_SHORT_MIN..LONG_SHORT_MAX # three octet longs
             [ BC_LONG_SHORT_ZERO + (val.object >> 16), (val.object >> 8), val.object ].pack('ccc')
-          else  # four octet longs
+          else # four octet longs
             [ BC_LONG_INT, val.object ].pack('Cl>')
           end
         else
@@ -79,22 +78,22 @@ module Hessian2
             tstr = write_string(type)
           end
 
-          length = val.size
-          if length <= LIST_DIRECT_MAX # [x70-77] type value*
-            str = [ BC_LIST_DIRECT + length ].pack('C')
+          len = val.size
+          if len <= LIST_DIRECT_MAX # [x70-77] type value*
+            str = [ BC_LIST_DIRECT + len ].pack('C')
             str << tstr
           else  # 'V' type int value*
             str = BC_LIST_FIXED
             str << tstr
-            str << write_int(length)
+            str << write_int(len)
           end
         else
-          length = val.size
-          if length <= LIST_DIRECT_MAX # [x78-7f] value*
-            str = [ BC_LIST_DIRECT_UNTYPED + length ].pack('C')
+          len = val.size
+          if len <= LIST_DIRECT_MAX # [x78-7f] value*
+            str = [ BC_LIST_DIRECT_UNTYPED + len ].pack('C')
           else  # x58 int value*
             str = [ BC_LIST_FIXED_UNTYPED ].pack('C')
-            str << write_int(length)
+            str << write_int(len)
           end
         end
 
@@ -106,7 +105,7 @@ module Hessian2
       when Bignum
         if (-0x80_000_000..0x7f_fff_fff).include?(val) # four octet longs
           [ BC_LONG_INT, val ].pack('Cl>')
-        else  # long
+        else # long
           [ BC_LONG, val ].pack('Cq>')
         end
       when Hash
@@ -116,19 +115,19 @@ module Hessian2
       when String
         if type and %w[ B b ].include?(type)
           chunks = []
-          length = val.size
-          while length > 0x8000
+          len = val.size
+          while len > 0x8000
             chunk = val.slice!(0, 0x8000)
             chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << chunk
-            length = val.size
+            len = val.size
           end
 
-          if length <= BINARY_DIRECT_MAX
-            chunks << [ BC_BINARY_DIRECT + length ].pack('C') << val 
-          elsif length <= BINARY_SHORT_MAX
-            chunks << [ BC_BINARY_SHORT + (length >> 8), length ].pack('CC') << val
+          if len <= BINARY_DIRECT_MAX
+            chunks << [ BC_BINARY_DIRECT + len ].pack('C') << val 
+          elsif len <= BINARY_SHORT_MAX
+            chunks << [ BC_BINARY_SHORT + (len >> 8), len ].pack('CC') << val
           else
-            chunks << [ BC_BINARY, length ].pack('Cn') << val
+            chunks << [ BC_BINARY, len ].pack('Cn') << val
           end
 
           chunks.join
@@ -189,8 +188,8 @@ module Hessian2
 
     def write_string(val)
       chunks = []
-      length = val.size
-      while length > 0x8000
+      len = val.size
+      while len > 0x8000
         chunk = val.slice!(0, 0x8000)
         if chunk.ascii_only?
           chunks << [ BC_STRING_CHUNK, 0x8000 ].pack('Cn') << chunk
@@ -198,26 +197,26 @@ module Hessian2
           # unpack-pack if chunk incompatible with ASCII-8BIT
           chunks << [ BC_STRING_CHUNK, 0x8000, *chunk.unpack('U*') ].pack('CnU*')
         end
-        length = val.size
+        len = val.size
       end
 
-      if length <= STRING_DIRECT_MAX
+      if len <= STRING_DIRECT_MAX
         if val.ascii_only?
-          chunks << [ BC_STRING_DIRECT + length ].pack('C') << val 
+          chunks << [ BC_STRING_DIRECT + len ].pack('C') << val 
         else 
-          chunks << [ BC_STRING_DIRECT + length, *val.unpack('U*') ].pack('CU*')
+          chunks << [ BC_STRING_DIRECT + len, *val.unpack('U*') ].pack('CU*')
         end
-      elsif length <= STRING_SHORT_MAX
+      elsif len <= STRING_SHORT_MAX
         if val.ascii_only?
-          chunks << [ BC_STRING_SHORT + (length >> 8), length ].pack('CC') << val
+          chunks << [ BC_STRING_SHORT + (len >> 8), len ].pack('CC') << val
         else
-          chunks << [ BC_STRING_SHORT + (length >> 8), length, *val.unpack('U*') ].pack('CCU*')
+          chunks << [ BC_STRING_SHORT + (len >> 8), len, *val.unpack('U*') ].pack('CCU*')
         end
       else
         if val.ascii_only?
-          chunks << [ BC_STRING, length ].pack('Cn') << val
+          chunks << [ BC_STRING, len ].pack('Cn') << val
         else
-          chunks << [ BC_STRING, length, *val.unpack('U*') ].pack('CnU*')
+          chunks << [ BC_STRING, len, *val.unpack('U*') ].pack('CnU*')
         end
       end
 
