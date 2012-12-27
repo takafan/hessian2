@@ -32,7 +32,7 @@ public class PersonService extends HessianServlet implements IPersonService {
 	public Person get_person()
 	{
 		Person person1 = new Person();
-		person1.setName("½ðÓñ±ò");
+		person1.setName("é‡‘çŽ‰å½¬");
 		person1.setAge(18);
 		
 		return person1;
@@ -80,7 +80,7 @@ public class PersonService extends HessianServlet implements IPersonService {
 	
 	public String get_string()
 	{
-		return "½ðÓñ±ò";
+		return "é‡‘çŽ‰å½¬";
 	}
 	
 	public String get_hstring()
@@ -228,7 +228,7 @@ public class PersonService extends HessianServlet implements IPersonService {
 	
 	public void set_string(String string1)
 	{
-		System.out.println("set_string " + string1);
+		System.out.println("set_string " + string1.length() + " " + string1.substring(0, 32));
 		return;
 	}
 	

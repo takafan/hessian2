@@ -32,9 +32,9 @@ module Hessian2
       when TypeWrapper
         write_object(val.object, vrefs, crefs, trefs, val.hessian_type)
       when TrueClass
-        BC_TRUE
+        [ BC_TRUE ].pack('C')
       when FalseClass
-        BC_FALSE
+        [ BC_FALSE ].pack('C')
       when Time
         if val.sec == 0 # date in minutes
           [ BC_DATE_MINUTE, val.to_i / 10 ].pack('Cl>')  
@@ -42,8 +42,8 @@ module Hessian2
           [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('CQ>') # date
         end
       when Float
-        return BC_DOUBLE_ZERO if val == 0 # double zero
-        return BC_DOUBLE_ONE if val == 1 # double one
+        return [ BC_DOUBLE_ZERO ].pack('C') if val == 0 # double zero
+        return [ BC_DOUBLE_ONE ].pack('C') if val == 1 # double one
         if val.to_i == val
           return [ BC_DOUBLE_BYTE, val ].pack('Cc') if (-0x80..0x7f).include?(val) # double octet
           return [ BC_DOUBLE_SHORT, (val >> 8), val ].pack('Ccc') if (-0x8000..0x7fff).include?(val) # double short
@@ -54,13 +54,13 @@ module Hessian2
         if type and %w[ L Long long ].include?(type)
           case val
           when LONG_DIRECT_MIN..LONG_DIRECT_MAX # single octet longs
-            [ BC_LONG_ZERO + val.object ].pack('c')
+            [ BC_LONG_ZERO + val ].pack('c')
           when LONG_BYTE_MIN..LONG_BYTE_MAX # two octet longs
-            [ BC_LONG_BYTE_ZERO + (val.object >> 8), val.object ].pack('cc')
+            [ BC_LONG_BYTE_ZERO + (val >> 8), val ].pack('cc')
           when LONG_SHORT_MIN..LONG_SHORT_MAX # three octet longs
-            [ BC_LONG_SHORT_ZERO + (val.object >> 16), (val.object >> 8), val.object ].pack('ccc')
+            [ BC_LONG_SHORT_ZERO + (val >> 16), (val >> 8), val ].pack('ccc')
           else # four octet longs
-            [ BC_LONG_INT, val.object ].pack('Cl>')
+            [ BC_LONG_INT, val ].pack('Cl>')
           end
         else
           write_int(val)
@@ -80,20 +80,16 @@ module Hessian2
 
           len = val.size
           if len <= LIST_DIRECT_MAX # [x70-77] type value*
-            str = [ BC_LIST_DIRECT + len ].pack('C')
-            str << tstr
+            str = [ BC_LIST_DIRECT + len ].pack('C') << tstr
           else  # 'V' type int value*
-            str = BC_LIST_FIXED
-            str << tstr
-            str << write_int(len)
+            str = [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
           end
         else
           len = val.size
           if len <= LIST_DIRECT_MAX # [x78-7f] value*
             str = [ BC_LIST_DIRECT_UNTYPED + len ].pack('C')
           else  # x58 int value*
-            str = [ BC_LIST_FIXED_UNTYPED ].pack('C')
-            str << write_int(len)
+            str = [ BC_LIST_FIXED_UNTYPED ].pack('C') << write_int(len)
           end
         end
 
@@ -111,7 +107,7 @@ module Hessian2
       when Hash
         write_map(val, vrefs, crefs, trefs, type)
       when NilClass
-        BC_NULL
+        [ BC_NULL ].pack('C')
       when String
         if type and %w[ B b ].include?(type)
           chunks = []
@@ -149,7 +145,7 @@ module Hessian2
           str = write_int(ref)
         else
           ref = crefs[type] = crefs.size # store a class definition
-          str = BC_OBJECT_DEF << write_string(type) << write_int(vars.size)
+          str = [ BC_OBJECT_DEF ].pack('C') << write_string(type) << write_int(vars.size)
           vars.each do |sym|
             str << write_string(sym.to_s[1..-1])
           end
@@ -158,7 +154,7 @@ module Hessian2
         if crefs[type] <= OBJECT_DIRECT_MAX
           str << [ BC_OBJECT_DIRECT + ref ].pack('C')
         else
-          str << BC_OBJECT << write_int(ref)
+          str << [ BC_OBJECT ].pack('C') << write_int(ref)
         end
         
         vars.each do |sym|
@@ -170,7 +166,7 @@ module Hessian2
     end
 
     def write_ref(val)
-      BC_REF << write_int(val)
+      [ BC_REF ].pack('C') << write_int(val)
     end
 
     def write_int(val)
@@ -236,10 +232,9 @@ module Hessian2
           tstr = write_string(type)
         end
 
-        str = BC_MAP
-        str << tstr
+        str = [ BC_MAP ].pack('C') << tstr
       else
-        str = BC_MAP_UNTYPED
+        str = [ BC_MAP_UNTYPED ].pack('C')
       end
 
       val.each do |k, v|
@@ -247,7 +242,7 @@ module Hessian2
         str << write_object(v, vrefs, crefs, trefs)
       end
 
-      str << BC_END
+      str << [ BC_END ].pack('C')
     end
 
   end
