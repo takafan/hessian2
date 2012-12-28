@@ -20,8 +20,8 @@
 
 # Hessian 2.0 Serialization Protocol Bytecode map
 
-# x00 - x1f    # utf-8 string length 0-32
-# x20 - x2f    # binary data length 0-16
+# x00 - x1f    # utf-8 string length 0-31
+# x20 - x2f    # binary data length 0-15
 # x30 - x33    # utf-8 string length 0-1023
 # x34 - x37    # binary data length 0-1023
 # x38 - x3f    # three-octet compact long (-x40000 to x3ffff)
@@ -55,7 +55,7 @@
 # x5b          # double 0.0
 # x5c          # double 1.0
 # x5d          # double represented as byte (-128.0 to 127.0)
-# x5e          # double represented as short (-32768.0 to 327676.0)
+# x5e          # double represented as short (-32768.0 to 32767.0)
 # x5f          # double represented as float
 # x60 - x6f    # object with direct type
 # x70 - x77    # fixed list with direct length

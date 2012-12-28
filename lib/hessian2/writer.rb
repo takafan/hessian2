@@ -1,5 +1,4 @@
 require 'hessian2/constants'
-require 'hessian2/fault'
 
 module Hessian2
   module Writer
@@ -86,9 +85,9 @@ module Hessian2
         return [ BC_DOUBLE_ONE ].pack('C') if val == 1 # double one
         if val.to_i == val
           return [ BC_DOUBLE_BYTE, val ].pack('Cc') if (-0x80..0x7f).include?(val) # double octet
-          return [ BC_DOUBLE_SHORT, (val >> 8), val ].pack('Ccc') if (-0x8000..0x7fff).include?(val) # double short
-          return [ BC_DOUBLE_MILL, val ].pack('Cg') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
+          return [ BC_DOUBLE_SHORT, 256 * val, val ].pack('Ccc') if (-0x8000..0x7fff).include?(val) # double short
         end
+        return [ BC_DOUBLE_MILL, val ].pack('Cg') if (-0x80_000_000..0x7f_fff_fff).include?(val) # double float
         [ BC_DOUBLE, val ].pack('CG') # double
       when Fixnum
         if type and %w[ L Long long ].include?(type)
@@ -225,7 +224,7 @@ module Hessian2
 
     def write_string(val)
       val = val.to_s unless val.class == String
-      chunks = []
+      chunks = ''
       len = val.size
       while len > 0x8000
         chunk = val.slice!(0, 0x8000)
@@ -240,8 +239,8 @@ module Hessian2
 
       if len <= STRING_DIRECT_MAX
         if val.ascii_only?
-          chunks << [ BC_STRING_DIRECT + len ].pack('C') << val 
-        else 
+          chunks << [ BC_STRING_DIRECT + len ].pack('C') << val
+        else
           chunks << [ BC_STRING_DIRECT + len, *val.unpack('U*') ].pack('CU*')
         end
       elsif len <= STRING_SHORT_MAX
@@ -258,7 +257,7 @@ module Hessian2
         end
       end
 
-      chunks.join
+      chunks
     end
 
     def write_map(val, vrefs = {}, crefs = {}, trefs = {}, type = nil)

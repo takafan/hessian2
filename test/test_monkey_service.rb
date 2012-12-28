@@ -100,100 +100,118 @@ monkey1 = Monkey.new(name: '塔卡', age: 3)
 monkey2 = Monkey.new(name: '大鸡', age: 2)
 now = Time.new
 
-# # 0x00..0x1f # utf-8 string length 0-32 ok
-# c1.set_string('金' * 32) 
+# # 0x00..0x1f # utf-8 string length 0-31
+# c1.set_string('')
+# c1.set_string('j' * 31)
+# c1.set_string('金' * 31)
 
-# # 0x20..0x2f # binary data length 0-16 ok
-# c1.set_bin(Hessian2::TypeWrapper.new('B', ([59.59] * 2).pack('G2'))) 
+# # 0x20..0x2f # binary data length 0-15
+# c1.set_bin(Hessian2::TypeWrapper.new('B', ''))
+# c1.set_bin(Hessian2::TypeWrapper.new('B', ['j' * 15].pack('a*')))
 
-# # 0x30..0x33 # utf-8 string length 0-1023 ok
+# # 0x30..0x33 # utf-8 string length 0-1023
+# c1.set_string('j' * 1023)
 # c1.set_string('金' * 1023)
 
-# # 0x34..0x37 # binary data length 0-1023 ok
+# # 0x34..0x37 # binary data length 0-1023
 # c1.set_bin(Hessian2::TypeWrapper.new('B', ['j' * 1023].pack('a*')))
 
-# 0x38..0x3f # three-octet compact long (-x40000 to x3ffff)
+# # 0x38..0x3f # three-octet compact long (-x40000 to x3ffff)
+# c1.set_long(-262144)
 # c1.set_long(262143)
 
-# 0x41 # 8-bit binary data non-final chunk ('A')
+# # 0x41 # 8-bit binary data non-final chunk ('A')
 # c1.set_bin(Hessian2::TypeWrapper.new('B', IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))))
 
-# 0x42 # 8-bit binary data final chunk ('B')
-# c1.set_bin(Hessian2::TypeWrapper.new('B', ['金玉彬' * 500].pack('a*')))
+# # 0x42 # 8-bit binary data final chunk ('B')
+# c1.set_bin(Hessian2::TypeWrapper.new('B', ['j' * 1024].pack('a*')))
+# c1.set_bin(Hessian2::TypeWrapper.new('B', ['j' * 32768].pack('a*')))
 
-# 0x43 # object type definition ('C')
+# # 0x43 # object type definition ('C')
 # c1.set_monkey_monkey(Hessian2::ClassWrapper.new('example.Monkey', monkey1), Hessian2::ClassWrapper.new('example.Monkey', monkey2))
 
-# 0x44 # 64-bit IEEE encoded double ('D')
+# # 0x44 # 64-bit IEEE encoded double ('D')
+# c1.set_double(-987654.3210)
 # c1.set_double(987654.3210)
 
-# 0x46 # boolean false ('F')
+# # 0x46 # boolean false ('F')
 # c1.set_false(false)
 
-# 0x48 # untyped map ('H')
+# # 0x48 # untyped map ('H')
 # c1.set_map(map1)
 
-# 0x49 # 32-bit signed integer ('I')
-# c1.set_int(987654)
+# # 0x49 # 32-bit signed integer ('I')
+# c1.set_int(-262145)
+# c1.set_int(262144)
+# c1.set_int(1073741823)
+# c1.set_int(-1073741824)
 
-# 0x4a # 64-bit UTC millisecond date
+# # 0x4a # 64-bit UTC millisecond date
 # c1.set_date(now)
 
-# 0x4b # 32-bit UTC minute date
+# # 0x4b # 32-bit UTC minute date
 # c1.set_date(Time.new(now.year, now.mon, now.day, now.hour, now.min))
 
-# 0x4c # 64-bit signed long integer ('L')
+# # 0x4c # 64-bit signed long integer ('L')
 # c1.set_long(9223372036854775807)
 # c1.set_long(59)
 # c1.set_long(Hessian2::TypeWrapper.new('L', 59))
 
-# 0x4d # map with type ('M')
+# # 0x4d # map with type ('M')
 # c1.set_map(Hessian2::TypeWrapper.new('example.Monkey', map1))
 
-# 0x4e # null ('N')
+# # 0x4e # null ('N')
 # c1.set_null(nil)
 
-# 0x4f # object instance ('O')
+# # 0x4f # object instance ('O')
 # c1.set_monkey(Hessian2::ClassWrapper.new('example.Monkey', map1))
 # c1.set_monkey(Hessian2::ClassWrapper.new('example.Monkey', monkey1))
 
-# 0x51 # reference to map/list/object - integer ('Q')
+# # 0x51 # reference to map/list/object - integer ('Q')
 # c1.set_map_map(map1, map1)
 # c1.set_list_list(list1, list1)
 # c1.set_monkey_monkey(Hessian2::ClassWrapper.new('example.Monkey', monkey1), Hessian2::ClassWrapper.new('example.Monkey', monkey1))
 
-# 0x52 # utf-8 string non-final chunk ('R')
+# # 0x52 # utf-8 string non-final chunk ('R')
 # c1.set_string('金玉彬' * 20000)
 
-# 0x53 # utf-8 string final chunk ('S')
+# # 0x53 # utf-8 string final chunk ('S')
 # c1.set_string('金玉彬' * 2000)
 
-# 0x54 # boolean true ('T')
+# # 0x54 # boolean true ('T')
 # c1.set_true(true)
 
-# 0x55 # variable-length list/vector ('U')
-# hessian2 write fixed-length list only
+# # 0x55 # variable-length list/vector ('U')
+# # hessian2 write fixed-length list only
 
-# 0x56 # fixed-length list/vector ('V')
+# # 0x56 # fixed-length list/vector ('V')
 # c1.set_list(Hessian2::TypeWrapper.new('[int', list1))
 # c1.set_list(Hessian2::TypeWrapper.new('[int', list1 * 9))
 
-# 0x57 # variable-length untyped list/vector ('W')
-# hessian2 write fixed-length list only
+# # 0x57 # variable-length untyped list/vector ('W')
+# # hessian2 write fixed-length list only
 
-# 0x58 # fixed-length untyped list/vector ('X')
+# # 0x58 # fixed-length untyped list/vector ('X')
 # c1.set_list(list1)
 # c1.set_list(list1 * 9)
 
-# 0x59 # long encoded as 32-bit int ('Y')
+# # 0x59 # long encoded as 32-bit int ('Y')
+# c1.set_long(-2147483648)
+# c1.set_long(2147483647)
 
-# 0x5b # double 0.0
+# # 0x5b # double 0.0
+# c1.set_double(0.0)
 
-# 0x5c # double 1.0
+# # 0x5c # double 1.0
+# c1.set_double(1.0)
 
-# 0x5d # double represented as byte (-128.0 to 127.0)
+# # 0x5d # double represented as byte (-128.0 to 127.0)
+c1.set_double(-128.0)
+c1.set_double(127.0)
 
-# 0x5e # double represented as short (-32768.0 to 327676.0)
+# 0x5e # double represented as short (-32768.0 to 32767.0)
+c1.set_double(-32768.0)
+c1.set_double(32767.0)
 
 # 0x5f # double represented as float
 
@@ -204,6 +222,7 @@ now = Time.new
 # 0x78..0x7f # fixed untyped list with direct length
 
 # 0x80..0xbf # one-octet compact int (-x10 to x3f, x90 is 0)
+# c1.set_int(0)
 
 # 0xc0..0xcf # two-octet compact int (-x800 to x7ff)
 

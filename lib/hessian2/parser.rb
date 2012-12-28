@@ -32,9 +32,9 @@ module Hessian2
     def parse_object(data, vrefs = [], crefs = [])
       c = data.slice!(0).unpack('C')[0]
       case c
-      when 0x00..0x1f # utf-8 string length 0-32
+      when 0x00..0x1f # utf-8 string length 0-31
         data.slice!(0, data.unpack("U#{c - BC_STRING_DIRECT}").pack('U*').bytesize)
-      when 0x20..0x2f # binary data length 0-16
+      when 0x20..0x2f # binary data length 0-15
         data.slice!(0, c - BC_BINARY_DIRECT)
       when 0x30..0x33 # utf-8 string length 0-1023
         len = ((c - BC_STRING_SHORT) << 8) + data.slice!(0).unpack('C')[0]
@@ -160,7 +160,7 @@ module Hessian2
         1
       when 0x5d # double represented as byte (-128.0 to 127.0)
         data.slice!(0).unpack('c')[0]
-      when 0x5e # double represented as short (-32768.0 to 327676.0)
+      when 0x5e # double represented as short (-32768.0 to 32767.0)
         b1, b0 = data.slice!(0, 2).unpack('cc')
         (b1 << 8) + b2
       when 0x5f # double represented as float
