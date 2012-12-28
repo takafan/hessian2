@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 
-public interface IPersonService {
-	public Person get_person();
+public interface IMonkeyService {
+	public Monkey get_monkey();
 	public Object get_null();
 	public boolean get_true();
 	public boolean get_false();
@@ -22,9 +22,9 @@ public interface IPersonService {
 	public ArrayList<Map<String, Integer>> get_rmap();
 	public byte[] get_binary();
 	public byte[] get_hbinary();
-	public void multi_set(Person person, 
-			Person[] personlist,
-			Map<Integer, Person> personmap,
+	public void multi_set(Monkey person, 
+			Monkey[] personlist,
+			Map<Integer, Monkey> personmap,
 			Object null1,
 			boolean true1,
 			boolean false1,
@@ -54,9 +54,12 @@ public interface IPersonService {
 	public void set_date(Date date1);
 	public void set_string(String str1);
 	public void set_hstring(String hstr1);
-	public void set_list(String[] list1);
+	public void set_list(int[] list1);
+	public void set_list_list(int[] list1, int[] list2);
 	public void set_map(Map<String, Integer> map1);
+	public void set_map_map(Map<String, Integer> map1, Map<String, Integer> map2);
 	public void set_bin(byte[] bin1);
-	public void set_person(Person person);
+	public void set_monkey(Monkey monkey1);
+	public void set_monkey_monkey(Monkey monkey1, Monkey monkey2);
 	
 }

@@ -1,11 +1,12 @@
 # -*- encoding: utf-8 -*-
 require 'hessian2'
+require ::File.expand_path('../monkey',  __FILE__)
 
-class Person
+class MonkeyService
   include Hessian2::Handler
 
-  def get_person
-    Hessian2::TypeWrapper.new('Person', {name: 'kimokbin', age: 16})
+  def get_monkey
+    Monkey.new(age: 3, name: '塔卡')
   end
 
   def get_null

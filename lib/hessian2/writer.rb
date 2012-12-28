@@ -1,4 +1,5 @@
 require 'hessian2/constants'
+require 'hessian2/fault'
 
 module Hessian2
   module Writer
@@ -29,6 +30,45 @@ module Hessian2
 
     def write_object(val, vrefs = {}, crefs = {}, trefs = {}, type = nil)
       case val
+      when ClassWrapper
+        obj = val.object
+        idx = vrefs[obj.object_id]
+        return write_ref(idx) if idx
+        vrefs[obj.object_id] = vrefs.size # store a value reference
+
+        klass = val.hessian_class
+        if crefs.include?(klass)
+          ref = crefs[klass]
+          str = ''
+        else
+          ref = crefs[klass] = crefs.size # store a class definition
+          if obj.class == Hash
+            vars = obj.keys
+          else
+            vars = obj.instance_variables.map{|sym| sym.to_s[1..-1]} # shift '@'
+          end
+          str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(vars.size)
+          vars.each do |var|
+            str << write_string(var)
+          end
+        end
+
+        if crefs[klass] <= OBJECT_DIRECT_MAX
+          str << [ BC_OBJECT_DIRECT + ref ].pack('C')
+        else
+          str << [ BC_OBJECT ].pack('C') << write_int(ref)
+        end
+
+        if obj.class == Hash
+          vvals = obj.values
+        else
+          vvals = obj.instance_variables.map{|sym| obj.instance_variable_get(sym)}
+        end
+        vvals.each do |vval|
+          str << write_object(vval, vrefs, crefs, trefs)
+        end
+
+        str
       when TypeWrapper
         write_object(val.object, vrefs, crefs, trefs, val.hessian_type)
       when TrueClass
@@ -36,8 +76,8 @@ module Hessian2
       when FalseClass
         [ BC_FALSE ].pack('C')
       when Time
-        if val.sec == 0 # date in minutes
-          [ BC_DATE_MINUTE, val.to_i / 10 ].pack('Cl>')  
+        if val.usec == 0 and val.sec == 0 # date in minutes
+          [ BC_DATE_MINUTE, val.to_i / 60 ].pack('CL>')
         else
           [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('CQ>') # date
         end
@@ -131,34 +171,35 @@ module Hessian2
           write_string(val)
         end
       when Symbol
-        write_string(val.to_s)
+        write_string(val)
       else
         idx = vrefs[val.object_id]
         return write_ref(idx) if idx
         vrefs[val.object_id] = vrefs.size # store a value reference
 
-        type = val.class.to_s unless type
-        vars = val.instance_variables
+        klass = val.class
 
-        if crefs.include?(type)
-          ref = crefs[type]
-          str = write_int(ref)
+        if crefs.include?(klass)
+          ref = crefs[klass]
+          str = ''
         else
-          ref = crefs[type] = crefs.size # store a class definition
-          str = [ BC_OBJECT_DEF ].pack('C') << write_string(type) << write_int(vars.size)
-          vars.each do |sym|
-            str << write_string(sym.to_s[1..-1])
+          ref = crefs[klass] = crefs.size # store a class definition
+          vars = val.instance_variables.map{|sym| sym.to_s[1..-1]} # shift '@'
+          str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(vars.size)
+          vars.each do |var|
+            str << write_string(var)
           end
         end
 
-        if crefs[type] <= OBJECT_DIRECT_MAX
+        if crefs[klass] <= OBJECT_DIRECT_MAX
           str << [ BC_OBJECT_DIRECT + ref ].pack('C')
         else
           str << [ BC_OBJECT ].pack('C') << write_int(ref)
         end
-        
-        vars.each do |sym|
-          str << write_object(val.instance_variable_get(sym), vrefs, crefs, trefs)
+
+        vvals = val.instance_variables.map{|sym| val.instance_variable_get(sym)}
+        vvals.each do |vval|
+          str << write_object(vval, vrefs, crefs, trefs)
         end
 
         str
@@ -183,6 +224,7 @@ module Hessian2
     end
 
     def write_string(val)
+      val = val.to_s unless val.class == String
       chunks = []
       len = val.size
       while len > 0x8000

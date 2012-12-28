@@ -82,8 +82,8 @@ module Hessian2
         val = data.slice!(0, 8).unpack('Q>')[0]
         Time.at(val / 1000, val % 1000 * 1000)
       when 0x4b # 32-bit UTC minute date
-        val = data.slice!(0, 4).unpack('l>')[0]
-        Time.at(val * 10)
+        val = data.slice!(0, 4).unpack('L>')[0]
+        Time.at(val * 60)
       when 0x4c # 64-bit signed long integer ('L')
         data.slice!(0, 8).unpack('q>')[0]
       when 0x4d # map with type ('M')

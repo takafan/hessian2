@@ -11,7 +11,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 
 import com.caucho.hessian.server.HessianServlet;
 
-public class PersonService extends HessianServlet implements IPersonService {
+public class MonkeyService extends HessianServlet implements IMonkeyService {
 	/**
 	 * 
 	 */
@@ -22,23 +22,23 @@ public class PersonService extends HessianServlet implements IPersonService {
         ServletContextHandler context = new ServletContextHandler(
         ServletContextHandler.SESSIONS);
         server.setHandler(context);
-        ServletHolder servletHolder = new ServletHolder(new PersonService());
+        ServletHolder servletHolder = new ServletHolder(new MonkeyService());
         context.addServlet(servletHolder, "/person");
         server.start();
         server.join(); 
 
     }
 	
-	public Person get_person()
+	public Monkey get_monkey()
 	{
-		Person person1 = new Person();
-		person1.setName("金玉彬");
-		person1.setAge(18);
+		Monkey monkey1 = new Monkey();
+		monkey1.setName("金玉彬");
+		monkey1.setAge(18);
 		
-		return person1;
+		return monkey1;
 	}
 	
-	public Person get_null()
+	public Monkey get_null()
 	{
 		return null;
 	}
@@ -132,9 +132,9 @@ public class PersonService extends HessianServlet implements IPersonService {
 		return get_binary();
 	}
 	
-	public void multi_set(Person person, 
-			Person[] personlist,
-			Map<Integer, Person> personmap,
+	public void multi_set(Monkey person, 
+			Monkey[] personlist,
+			Map<Integer, Monkey> personmap,
 			Object null1,
 			boolean true1,
 			boolean false1,
@@ -238,11 +238,23 @@ public class PersonService extends HessianServlet implements IPersonService {
 		return;
 	}
 	
-	public void set_list(String[] list1)
+	public void set_list(int[] list1)
 	{
 		System.out.println("set_list " + list1.length);
-		for (String str : list1) {
-			System.out.println("  " + str);
+		for (int int1 : list1) {
+			System.out.print("  " + int1);
+		}
+		return;
+	}
+	
+	public void set_list_list(int[] list1, int[] list2)
+	{
+		System.out.println("set_list_list " + list1.length + " " + list2.length);
+		for (int int1 : list1) {
+			System.out.print("  " + int1);
+		}
+		for (int int2 : list2) {
+			System.out.print("  " + int2);
 		}
 		return;
 	}
@@ -253,15 +265,26 @@ public class PersonService extends HessianServlet implements IPersonService {
 		return;
 	}
 	
+	public void set_map_map(Map<String, Integer> map1, Map<String, Integer> map2)
+	{
+		System.out.println("set_map_map " + map1 + " " + map2);
+		return;
+	}
+	
 	public void set_bin(byte[] bin1)
 	{
 		System.out.println("set_bin " + bin1.length);
 		return;
 	}
 	
-	public void set_person(Person person)
+	public void set_monkey(Monkey monkey)
 	{
-		System.out.print("  " + person.name + ": " + person.age);
+		System.out.println("  " + monkey.name + ": " + monkey.age);
+	}
+	
+	public void set_monkey_monkey(Monkey monkey1, Monkey monkey2)
+	{
+		System.out.println("  " + monkey1.name + ": " + monkey1.age + " " + monkey2.name + ": " + monkey2.age);
 	}
 	
 }
