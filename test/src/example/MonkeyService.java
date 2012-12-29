@@ -18,12 +18,12 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	private static final long serialVersionUID = 1L;
 	
 	public static void main(String[] args) throws Exception {
-        Server server = new Server(9001);
+        Server server = new Server(9292);
         ServletContextHandler context = new ServletContextHandler(
         ServletContextHandler.SESSIONS);
         server.setHandler(context);
         ServletHolder servletHolder = new ServletHolder(new MonkeyService());
-        context.addServlet(servletHolder, "/person");
+        context.addServlet(servletHolder, "/monkey");
         server.start();
         server.join(); 
 
@@ -131,86 +131,70 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	{
 		return get_binary();
 	}
-	
-	public void multi_set(Monkey person, 
-			Monkey[] personlist,
-			Map<Integer, Monkey> personmap,
-			Object null1,
-			boolean true1,
-			boolean false1,
-			int int1,
-			long wlong1,
-			long long1,
-			double double1,
-			Date date1,
-			String str1,
-			String hstr1,
-			String[] list1,
-			String[] list1r,
-			ArrayList<ArrayList<String>> rlist1,
-			Map<String, Integer> map1,
-			Map<String, Integer> map1r,
-			ArrayList<Map<String, Integer>> rmap1,
-			byte[] bin1,
-			byte[] hbin1)
-	{
-		System.out.println("true1 " + true1);
-		System.out.println("false1 " + false1);
-		System.out.println("int1 " + int1);
-		System.out.println("long1 " + long1);
-		System.out.println("wlong1 " + wlong1);
-		System.out.println("double1 " + double1);
-		System.out.println("date1 " + date1);
-		System.out.println("str1 " + str1);
-		System.out.println("person " + person);
-		System.out.println("list1 " + list1.length);
-		for (String str : list1) {
-			System.out.println("  " + str);
-		}
-		System.out.println("list2 " + list1r.length);
-		
-		System.out.println("map1 " + map1.size());
-		for(Map.Entry<String, Integer> e: map1.entrySet()){
-			System.out.println("  " + e.getKey() + ": " + e.getValue());
-		}
-		
-		return;
-	}
-	
+
 	
 	public void set_null(Object obj)
 	{
-		System.out.println("set_null " + obj);
+		Object _null = null;
+		if(_null == obj)
+		{
+			System.out.print("set_null.");
+		}
+		else
+		{
+			System.out.println(obj);
+		}
 		return;
 	}
 	
 	public void set_true(boolean true1)
 	{
-		System.out.println("set_true " + true1);
+		boolean _true = true;
+		if(_true == true1)
+		{
+			System.out.print("set_true.");
+		}
+		else
+		{
+			System.out.println(true1);
+		}
 		return;
 	}
 	
 	public void set_false(boolean false1)
 	{
+		boolean _false = false;
+		if(_false == false1)
+		{
+			System.out.print("set_false.");
+		}
+		else
+		{
+			System.out.println(false1);
+		}
 		System.out.println("set_false " + false1);
 		return;
 	}
 	
 	public void set_int(int int1)
 	{
+		int _int = int1;
+		
 		System.out.println("set_int " + int1);
 		return;
 	}
 	
 	public void set_long(long long1)
 	{
+		System.out.println("min " + Long.MIN_VALUE);
+		System.out.println("max " + Long.MAX_VALUE);
 		System.out.println("set_long " + long1);
 		return;
 	}
 	
-	public void set_wlong(long wlong1)
+	public void set_float(float float1)
 	{
-		System.out.println("set_wlong " + wlong1);
+		System.out.println("set_float " + float1);
 		return;
 	}
 	
@@ -228,13 +212,18 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	
 	public void set_string(String string1)
 	{
-		System.out.println("set_string " + string1.length() + " " + string1.substring(0, 32));
-		return;
-	}
-	
-	public void set_hstring(String hstr1)
-	{
-		System.out.println("set_hstring " + hstr1.length());
+		int len = string1.length();
+		String str = "";
+		if(len <= 31)
+		{
+			str = string1;
+		}
+		else
+		{
+			str = string1.substring(0, 32);
+		}
+			
+		System.out.println("set_string " + string1.length() + " " + str);
 		return;
 	}
 	
@@ -247,27 +236,24 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		return;
 	}
 	
-	public void set_list_list(int[] list1, int[] list2)
+	public void set_map(Map<String, Object> map1)
 	{
-		System.out.println("set_list_list " + list1.length + " " + list2.length);
+		System.out.println("set_map " + map1);
+		return;
+	}
+	
+	public void set_map_list_monkey_map_list_monkey(Map<String, Object> map1, int[] list1, Monkey monkey1, 
+			Map<String, Object> map2, int[] list2, Monkey monkey2)
+	{
+		System.out.println("set_map_list_object_map_list_object");
+		System.out.println(map1 + " " + map2);
 		for (int int1 : list1) {
 			System.out.print("  " + int1);
 		}
 		for (int int2 : list2) {
 			System.out.print("  " + int2);
 		}
-		return;
-	}
-	
-	public void set_map(Map<String, Integer> map1)
-	{
-		System.out.println("set_map " + map1);
-		return;
-	}
-	
-	public void set_map_map(Map<String, Integer> map1, Map<String, Integer> map2)
-	{
-		System.out.println("set_map_map " + map1 + " " + map2);
+		System.out.println("  " + monkey1.name + ": " + monkey1.age + " " + monkey2.name + ": " + monkey2.age);
 		return;
 	}
 	
@@ -277,14 +263,17 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		return;
 	}
 	
-	public void set_monkey(Monkey monkey)
-	{
-		System.out.println("  " + monkey.name + ": " + monkey.age);
-	}
-	
 	public void set_monkey_monkey(Monkey monkey1, Monkey monkey2)
 	{
 		System.out.println("  " + monkey1.name + ": " + monkey1.age + " " + monkey2.name + ": " + monkey2.age);
+	}
+	
+	public void set_monkeys(ArrayList<Monkey> monkeys)
+	{
+		System.out.println("set_monkeys " + monkeys.size());
+		for (Monkey monkey : monkeys) {
+			System.out.println("  " + monkey.name + ": " + monkey.age);
+		}
 	}
 	
 }
