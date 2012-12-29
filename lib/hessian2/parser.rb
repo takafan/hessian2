@@ -29,7 +29,7 @@ module Hessian2
       end
     end
 
-    def parse_object(data, vrefs = [], crefs = [])
+    def parse_object(data, refs = [], crefs = [])
       c = data.slice!(0).unpack('C')[0]
       case c
       when 0x00..0x1f # utf-8 string length 0-31
@@ -60,10 +60,10 @@ module Hessian2
         parse_object(data) #=> class name
         attrs = []
         parse_object(data).times do
-          attrs << parse_object(data, vrefs, crefs)
+          attrs << parse_object(data, refs, crefs)
         end
         crefs << attrs
-        parse_object(data, vrefs, crefs)
+        parse_object(data, refs, crefs)
       when 0x44 # 64-bit IEEE encoded double ('D')
         data.slice!(0, 8).unpack('G')[0]
       when 0x46 # boolean false ('F')
@@ -71,9 +71,9 @@ module Hessian2
       when 0x48 # untyped map ('H')
         val = {}
         while data[0] != 'Z'
-          val[parse_object(data)] = parse_object(data, vrefs, crefs)
+          val[parse_object(data)] = parse_object(data, refs, crefs)
         end
-        vrefs << val # store a value reference
+        refs << val # store a value reference
         data.slice!(0) #=> 'Z'
         val
       when 0x49 # 32-bit signed integer ('I')
@@ -90,9 +90,9 @@ module Hessian2
         parse_object(data) #=> type
         val = {}
         while data[0] != 'Z'
-          val[parse_object(data)] = parse_object(data, vrefs, crefs)
+          val[parse_object(data)] = parse_object(data, refs, crefs)
         end
-        vrefs << val # store a value reference
+        refs << val # store a value reference
         data.slice!(0) #=> 'Z'
         val
       when 0x4e # null ('N')
@@ -101,11 +101,11 @@ module Hessian2
         val = {}
         attrs = crefs[parse_object(data)]
         attrs.each do |a|
-          val[a] = parse_object(data, vrefs, crefs)
+          val[a] = parse_object(data, refs, crefs)
         end
         val
       when 0x51 # reference to map/list/object - integer ('Q')
-        vrefs[parse_object(data)]
+        refs[parse_object(data)]
       when 0x52 # utf-8 string non-final chunk ('R')
         chunks = []
         chunks << cut_string(data)
@@ -124,33 +124,33 @@ module Hessian2
 
         val = []
         while data[0] != 'Z'
-          val << parse_object(data, vrefs, crefs)
+          val << parse_object(data, refs, crefs)
         end
-        vrefs << val # store a value reference
+        refs << val # store a value reference
         data.slice!(0) #=> 'Z'
         val
       when 0x56 # fixed-length list/vector ('V')
         parse_object(data) #=> type
         val = []
-        parse_object(data, vrefs, crefs).times do
-          val << parse_object(data, vrefs, crefs)
+        parse_object(data, refs, crefs).times do
+          val << parse_object(data, refs, crefs)
         end
-        vrefs << val # store a value reference
+        refs << val # store a value reference
         val
       when 0x57 # variable-length untyped list/vector ('W')
         val = []
         while data[0] != 'Z'
-          val << parse_object(data, vrefs, crefs)
+          val << parse_object(data, refs, crefs)
         end
-        vrefs << val # store a value reference
+        refs << val # store a value reference
         data.slice!(0) #=> 'Z'
         val
       when 0x58 # fixed-length untyped list/vector ('X')
         val = []
         parse_object(data).times do
-          val << parse_object(data, vrefs, crefs)
+          val << parse_object(data, refs, crefs)
         end
-        vrefs << val # store a value reference
+        refs << val # store a value reference
         val
       when 0x59 # long encoded as 32-bit int ('Y')
         data.slice!(0, 4).unpack('l>')[0]
@@ -169,23 +169,23 @@ module Hessian2
         val = {}
         attrs = crefs[c - BC_OBJECT_DIRECT]
         attrs.each do |a|
-          val[a] = parse_object(data, vrefs, crefs)
+          val[a] = parse_object(data, refs, crefs)
         end
         val
       when 0x70..0x77 # fixed list with direct length
         parse_object(data) #=> type
         val = []
         (c - BC_LIST_DIRECT).times do
-          val << parse_object(data, vrefs, crefs)
+          val << parse_object(data, refs, crefs)
         end
-        vrefs << val # store a value reference
+        refs << val # store a value reference
         val
       when 0x78..0x7f # fixed untyped list with direct length
         val = []
         (c - BC_LIST_DIRECT_UNTYPED).times do
-          val << parse_object(data, vrefs, crefs)
+          val << parse_object(data, refs, crefs)
         end
-        vrefs << val # store a value reference
+        refs << val # store a value reference
         val
       when 0x80..0xbf # one-octet compact int (-x10 to x3f, x90 is 0)
         c - BC_INT_ZERO
