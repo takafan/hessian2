@@ -3,10 +3,11 @@
 lib_path = File.expand_path('../../lib', __FILE__)
 $:.unshift(lib_path)
 require 'hessian2'
+require ::File.expand_path('../monkey',  __FILE__)
 
 c2 = Hessian2::Client.new('http://192.168.3.161:8100/passport/hessian/userProfileService')
 # arr = (1..2000).to_a
-arr = (1..200).to_a
+arr = (1..2000).to_a
 t0 = Time.new
 profiles = c2.getProfileByUids(arr)
 puts "all: #{Time.new - t0}"

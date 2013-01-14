@@ -2,6 +2,9 @@
 
 implement hessian 1.0.2 specification. refactor Christer Sandberg's hessian, ruby 1.9.3 required.
 
+todo
+slice is bad, use offset
+
 == Using
 
   gem install hessian2
