@@ -10,7 +10,6 @@ module Hessian2
     attr_reader :scheme, :host, :port, :path, :proxy
 
     include Writer
-    include Parser
 
     def initialize(url, proxy = {})
       uri = URI.parse(url)
@@ -31,8 +30,7 @@ module Hessian2
       conn.use_ssl = true and conn.verify_mode = OpenSSL::SSL::VERIFY_NONE if @scheme == 'https'
       conn.start do |http|
         data = http.request(req, call(method, args)).body
-        puts data.size
-        parse data
+        Hessian2::Parser.parse data
       end
     end
 
