@@ -2,23 +2,32 @@
 
 sending data, fast.
 
-todo
-slice is bad, use offset
-
-== Using
+== client
 
   gem install hessian2
 
   require 'hessian2'
 
-  url = 'http://127.0.0.1:9292/person'
+  url = 'http://127.0.0.1:9292/monkey'
 
   client = Hessian2::Client.new(url)
   
-  # call remote function: public Person getPersonByUid(Long uid);
-  uid = Hessian2::TypeWrapper.new('L', 59)
-  puts client.getPersonByUid(uid)
+  # call remote function: get_monkey()
+  client.get_monkey
 
-== Authors
+== type wrapper
+
+== service
+
+== todo
+
+benchmark
+supports packet+ and envelope+
+
+== authors
 
 * {Takafan}[http://hululuu.com]
+
+== license
+
+MIT

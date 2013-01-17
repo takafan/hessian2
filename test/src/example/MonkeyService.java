@@ -2,6 +2,7 @@ package example;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.server.Server;
@@ -28,108 +29,31 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 
     }
 	
-//	public Monkey get_monkey()
-//	{
-//		Monkey monkey1 = new Monkey();
-//		monkey1.setName("金玉彬");
-//		monkey1.setAge(18);
-//		
-//		return monkey1;
-//	}
-//	
-//	public Monkey get_null()
-//	{
-//		return null;
-//	}
-//	
-//	public boolean get_true()
-//	{
-//		return true;
-//	}
-//	
-//	public boolean get_false()
-//	{
-//		return false;
-//	}
-//	
-//	public int get_int()
-//	{
-//		return 300;
-//	}
-//	
-//	public long get_long()
-//	{
-//		return 9876543210L;
-//	}
-//	
-//	public long get_wlong()
-//	{
-//		return 59L;
-//	}
-//	
-//	public double get_double()
-//	{
-//		return 12.25;
-//	}
-//	
-//	public Date get_date()
-//	{
-//		return new Date();
-//	}
-//	
-//	public String get_string()
-//	{
-//		return "金玉彬";
-//	}
-//	
-//	public String get_hstring()
-//	{
-//		String str = get_string();
-//		return str;
-//	}
-//	
-//	public String[] get_list()
-//	{
-//		String[] list = {"a", "b", "c"};
-//		return list;
-//	}
-//	
-//	public ArrayList<String[]> get_rlist()
-//	{
-//		ArrayList<String[]> arr = new ArrayList<String[]>();
-//		String[] l = get_list();
-//		arr.add(l);
-//		arr.add(l);
-//		return arr;
-//	}
-//
-//	public Map<String, Integer> get_map()
-//	{
-//		Map<String, Integer> m = new HashMap<String, Integer>();
-//		m.put("a", 1);
-//		m.put("b", 2);
-//		return m;
-//	}
-//	
-//	public ArrayList<Map<String, Integer>> get_rmap()
-//	{
-//		ArrayList<Map<String, Integer>> arr = new ArrayList<Map<String, Integer>>();
-//		Map<String, Integer> m = get_map();
-//		arr.add(m);
-//		arr.add(m);
-//		return arr;
-//	}
-//	
-//	public byte[] get_binary()
-//	{
-//		byte[] b = {};
-//		return b;
-//	}
-//	
-//	public byte[] get_hbinary()
-//	{
-//		return get_binary();
-//	}
+	// 0x00..0x1f # utf-8 string length 0-31
+	public String get_string_0()
+	{
+		return "";
+	}
+	
+	public String get_string_x1f()
+	{
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < 0x1f; i++)
+		{
+			sb.append("j");
+		}
+		return sb.toString();
+	}
+	
+	public String get_string_x1fu()
+	{
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < 0x1f; i++)
+		{
+			sb.append("金");
+		}
+		return sb.toString();
+	}
 	
 	public void set_string_0(String string1)
 	{
@@ -149,6 +73,17 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_string_x1fu", isT);
 	}
 	
+	// 0x20..0x2f # binary data length 0-15
+	public byte[] get_bin_0()
+	{
+		return new byte[0];
+	}
+	
+	public byte[] get_bin_xf()
+	{
+		return new byte[0xf];
+	}
+	
 	public void set_bin_0(byte[] bin1)
 	{
 		boolean isT = bin1.length == 0;
@@ -159,6 +94,47 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	{
 		boolean isT = bin1.length == 0xf;
 		printAssert("set_bin_xf", isT);
+	}
+	
+	// 0x30..0x33 # utf-8 string length 0-1023
+	public String get_string_x20()
+	{
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < 0x20; i++)
+		{
+			sb.append("j");
+		}
+		return sb.toString();
+	}
+	
+	public String get_string_x20u()
+	{
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < 0x20; i++)
+		{
+			sb.append("金");
+		}
+		return sb.toString();
+	}
+	
+	public String get_string_x3ff()
+	{
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < 0x3ff; i++)
+		{
+			sb.append("j");
+		}
+		return sb.toString();
+	}
+	
+	public String get_string_x3ffu()
+	{
+		StringBuilder sb = new StringBuilder();
+		for(int i = 0; i < 0x3ff; i++)
+		{
+			sb.append("金");
+		}
+		return sb.toString();
 	}
 	
 	public void set_string_x20(String string1)
@@ -185,6 +161,17 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_string_x3ffu", isT);
 	}
 	
+	// 0x34..0x37 # binary data length 0-1023
+	public byte[] get_bin_x10()
+	{
+		return new byte[0x10];
+	}
+	
+	public byte[] get_bin_x3ff()
+	{
+		return new byte[0x3ff];
+	}
+	
 	public void set_bin_x10(byte[] bin1)
 	{
 		boolean isT = bin1.length == 0x10;
@@ -195,6 +182,27 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	{
 		boolean isT = bin1.length == 0x3ff;
 		printAssert("set_bin_x3ff", isT);
+	}
+	
+	// 0x38..0x3f # three-octet compact long (-x40000 to x3ffff)
+	public long get_long_mx801()
+	{
+		return -0x801L;
+	}
+	
+	public long get_long_x800()
+	{
+		return 0x800L;
+	}
+	
+	public long get_long_mx40000()
+	{
+		return -0x40000L;
+	}
+	
+	public long get_long_x3ffff()
+	{
+		return 0x3ffffL;
 	}
 	
 	public void set_long_mx801(long long1)
@@ -221,10 +229,27 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_long_x3ffff", isT);
 	}
 	
+	// 0x41 # 8-bit binary data non-final chunk ('A')
+	public byte[] get_lighthouse()
+	{
+		return new byte[561276];
+	}
+	
 	public void set_lighthouse(byte[] bin1)
 	{
 		boolean isT = bin1.length == 561276;
 		printAssert("set_lighthouse", isT);
+	}
+	
+	// 0x42 # 8-bit binary data final chunk ('B')
+	public byte[] get_bin_x400()
+	{
+		return new byte[0x400];
+	}
+	
+	public byte[] get_bin_x8000()
+	{
+		return new byte[0x8000];
 	}
 	
 	public void set_bin_x400(byte[] bin1)
@@ -239,10 +264,31 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_bin_x8000", isT);
 	}
 	
-	public void set_monkey_monkey(Monkey monkey1, Monkey monkey2)
+	// 0x43 # object type definition ('C') and 0x60..0x6f # object with direct type
+	// 0x4d # map with type ('M')
+	public Monkey get_monkey()
 	{
-		boolean isT = monkey1.name.equals("阿门") && monkey1.age == 7 && monkey2.name.equals("大鸡") && monkey2.age == 6;
-		printAssert("set_monkey_monkey", isT);
+		Monkey monkey1 = new Monkey();
+		monkey1.name = "阿门";
+		monkey1.age = 7;
+		return monkey1;
+	}
+	
+	public void set_monkey(Monkey monkey1)
+	{
+		boolean isT = monkey1.name.equals("阿门") && monkey1.age == 7;
+		printAssert("set_monkey", isT);
+	}
+	
+	// 0x44 # 64-bit IEEE encoded double ('D')
+	public double get_double_min()
+	{
+		return Double.MIN_VALUE;
+	}
+	
+	public double get_double_max()
+	{
+		return Double.MAX_VALUE;
 	}
 	
 	public void set_double_min(double double1)
@@ -257,16 +303,52 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_double_max", isT);
 	}
 	
+	// 0x46 # boolean false ('F')
+	public boolean get_false()
+	{
+		return false;
+	}
+	
 	public void set_false(boolean false1)
 	{
 		boolean isT = !false1;
 		printAssert("set_false", isT);
 	}
 	
+	// 0x48 # untyped map ('H')
+	public Map<String, Object> get_map_h()
+	{
+		Map<String, Object> map1 = new HashMap<String, Object>();
+		map1.put("name", "阿门");
+		map1.put("age", 7);
+		return map1;
+	}
+	
 	public void set_map_h(Map<String, Object> map1)
 	{
 		boolean isT = map1.get("name").equals("阿门") && map1.get("age").equals(7);
 		printAssert("set_map_h", isT);
+	}
+	
+	// 0x49 # 32-bit signed integer ('I')
+	public int get_int_mx40001()
+	{
+		return -0x40001;
+	}
+	
+	public int get_int_x40000()
+	{
+		return 0x40000;
+	}
+	
+	public int get_int_mx40_000_000()
+	{
+		return -0x40000000;
+	}
+	
+	public int get_int_x3f_fff_fff()
+	{
+		return 0x3fffffff;
 	}
 	
 	public void set_int_mx40001(int int1)
@@ -293,10 +375,22 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_int_x3f_fff_fff", isT);
 	}
 	
+	// 0x4a # 64-bit UTC millisecond date
+	public Date get_date_20130112145959()
+	{
+		return new Date(1357973999000L);
+	}
+	
 	public void set_date_20130112145959(Date date1)
 	{
 		boolean isT = date1.equals(new Date(1357973999000L));
 		printAssert("set_date", isT);
+	}
+	
+	// 0x4b # 32-bit UTC minute date
+	public Date get_date_201301121459()
+	{
+		return new Date(1357973940000L);
 	}
 	
 	public void set_date_201301121459(Date date1)
@@ -304,6 +398,16 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		boolean isT = date1.equals(new Date(1357973940000L));
 		printAssert("set_date_min", isT);
 	}
+	
+	// 0x4c # 64-bit signed long integer ('L')
+	public long get_long_mx80_000_001()
+	{
+		return -0x80000001L;
+	}
+	
+	public long get_long_x80_000_000();
+	public long get_long_mx8_000_000_000_000_000();
+	public long get_long_x7_fff_fff_fff_fff_fff();
 	
 	public void set_long_mx80_000_001(long long1)
 	{
@@ -328,19 +432,22 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		boolean isT = long1 == 0x7fffffffffffffffL;
 		printAssert("set_long_x7_fff_fff_fff_fff_fff", isT);
 	}
-
+	
+	// 0x4e # null ('N')
 	public void set_null(Object obj)
 	{
 		boolean isT = obj == null;
 		printAssert("set_null", isT);
 	}
 	
+	// 0x4f # object instance ('O')
 	public void set_monkeys(ArrayList<Monkey> monkeys)
 	{
 		boolean isT = monkeys.size() == 0x11;
 		printAssert("set_monkeys", isT);
 	}
 	
+	// 0x51 # reference to map/list/object - integer ('Q')
 	public void set_map_list_monkey_map_list_monkey(Map<String, Object> map1, int[] list1, Monkey monkey1, 
 			Map<String, Object> map2, int[] list2, Monkey monkey2)
 	{
@@ -348,6 +455,7 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_map_list_monkey_map_list_monkey", isT);
 	}
 	
+	// 0x52 # utf-8 string non-final chunk ('R')
 	public void set_string_x8001(String string1)
 	{
 		boolean isT = string1.length() == 0x8001 && string1.charAt(0) == 'j';
@@ -360,6 +468,7 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_string_x8001u", isT);
 	}
 	
+	// 0x53 # utf-8 string final chunk ('S')
 	public void set_string_x400(String string1)
 	{
 		boolean isT = string1.length() == 0x400 && string1.charAt(0) == 'j';
@@ -384,18 +493,29 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_string_x8000u", isT);
 	}
 	
+	// 0x54 # boolean true ('T')
+	public boolean get_true();
+	
 	public void set_true(boolean true1)
 	{
 		boolean isT = true1; 
 		printAssert("set_true", isT);
 	}
-
+	
+	// 0x56 # fixed-length list/vector ('V')
+	// 0x58 # fixed-length untyped list/vector ('X')
+	public int[] get_list();
 	public void set_list(int[] list1)
 	{
 		boolean isT = list1.length == 14 && list1[0] == 1; 
 		printAssert("set_list", isT);
 	}
 	
+	// 0x59 # long encoded as 32-bit int ('Y')
+	public long get_long_mx40001();
+	public long get_long_x40000();
+	public long get_long_mx80_000_000();
+	public long get_long_x7f_fff_fff();
 	public void set_long_mx40001(long long1)
 	{
 		boolean isT = long1 == -0x40001L;
@@ -419,19 +539,26 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		boolean isT = long1 == 0x7fffffffL;
 		printAssert("set_long_x7f_fff_fff", isT);
 	}
-
+	
+	// 0x5b # double 0.0
+	public double get_double_0();
 	public void set_double_0(double double1)
 	{
 		boolean isT = double1 == 0D;
 		printAssert("set_double_0", isT);
 	}
 	
+	// 0x5c # double 1.0
+	public double get_double_1();
 	public void set_double_1(double double1)
 	{
 		boolean isT = double1 == 1D;
 		printAssert("set_double_1", isT);
 	}
 	
+	// 0x5d # double represented as byte (-128.0 to 127.0)
+		public double get_double_m128();
+		public double get_double_127();
 	public void set_double_m128(double double1)
 	{
 		boolean isT = double1 == -128.0;
@@ -444,6 +571,11 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_double_x7f", isT);
 	}
 	
+	// 0x5e # double represented as short (-32768.0 to 32767.0)
+		public double get_double_m129();
+		public double get_double_128();
+		public double get_double_m32768();
+		public double get_double_32767();
 	public void set_double_m129(double double1)
 	{
 		boolean isT = double1 == -129.0;
@@ -468,6 +600,10 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_double_x7fff", isT);
 	}
 	
+	// 0x70..0x77 # fixed list with direct length 
+		// 0x78..0x7f # fixed untyped list with direct length
+		public int[] get_list_size0();
+		public int[] get_list_size7();
 	public void set_list_size0(int[] list1)
 	{
 		boolean isT = list1.length == 0;
@@ -480,6 +616,9 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_list_size7", isT);
 	}
 	
+	// 0x80..0xbf # one-octet compact int (-x10 to x3f, x90 is 0)
+		public int get_int_mx10();
+		public int get_int_x3f();
 	public void set_int_mx10(int int1)
 	{
 		boolean isT = int1 == -0x10;
@@ -492,6 +631,11 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_int_x3f", isT);
 	}
 	
+	// 0xc0..0xcf # two-octet compact int (-x800 to x7ff)
+		public int get_int_mx11();
+		public int get_int_x40();
+		public int get_int_mx800();
+		public int get_int_x7ff();
 	public void set_int_mx11(int int1)
 	{
 		boolean isT = int1 == -0x11;
@@ -516,7 +660,12 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_int_x7ff", isT);
 	}
 	
-	public void set_int_set_int_mx801(int int1)
+	// 0xd0..0xd7 # three-octet compact int (-x40000 to x3ffff)
+		public int get_int_mx801();
+		public int get_int_x800();
+		public int get_int_mx40000();
+		public int get_int_x3ffff();
+	public void set_int_mx801(int int1)
 	{
 		boolean isT = int1 == -0x801;
 		printAssert("set_int_set_int_mx801", isT);
@@ -540,6 +689,9 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_int_x3ffff", isT);
 	}
 	
+	// 0xd8..0xef # one-octet compact long (-x8 to xf, xe0 is 0)
+		public long get_long_mx8();
+		public long get_long_xf();
 	public void set_long_mx8(long long1)
 	{
 		boolean isT = long1 == -0x8L;
@@ -552,6 +704,11 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_long_xf", isT);
 	}
 	
+	// 0xf0..0xff # two-octet compact long (-x800 to x7ff, xf8 is 0)
+		public long get_long_mx9();
+		public long get_long_x10();
+		public long get_long_mx800();
+		public long get_long_x7ff();
 	public void set_long_mx9(long long1)
 	{
 		boolean isT = long1 == -0x9L;

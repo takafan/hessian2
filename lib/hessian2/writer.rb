@@ -14,9 +14,7 @@ module Hessian2
     end
 
     def reply(val)
-      out = [ 'H', '2', '0', 'R' ].pack('ahha')
-      out << write_object(val)
-      out
+      [ 'H', '2', '0', 'R' ].pack('ahha') << write_object(val)
     end
 
     def write_fault(e)
@@ -150,20 +148,19 @@ module Hessian2
         [ BC_NULL ].pack('C')
       when String
         if type and %w[ B b ].include?(type)
-          chunks = []
-          len = val.size
+          chunks, i, len = [], 0, val.size
           while len > 0x8000
-            chunk = val.slice!(0, 0x8000)
-            chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << chunk
-            len = val.size
+            chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << val[i...(i += 0x8000)]
+            len -= 0x8000
           end
 
+          final = val[i..-1]
           if len <= BINARY_DIRECT_MAX
-            chunks << [ BC_BINARY_DIRECT + len ].pack('C') << val 
+            chunks << [ BC_BINARY_DIRECT + len ].pack('C') << final
           elsif len <= BINARY_SHORT_MAX
-            chunks << [ BC_BINARY_SHORT + (len >> 8), len ].pack('CC') << val
+            chunks << [ BC_BINARY_SHORT + (len >> 8), len ].pack('CC') << final
           else
-            chunks << [ BC_BINARY, len ].pack('Cn') << val
+            chunks << [ BC_BINARY, len ].pack('Cn') << final
           end
 
           chunks.join
@@ -205,6 +202,24 @@ module Hessian2
       end
     end
 
+    def print_string(str)
+      arr, i = Array.new(str.bytesize), 0
+      str.unpack('U*').each do |c|
+        if c < 0x80
+          arr[i] = c
+        elsif c < 0x800
+          arr[i] = 0xc0 + ((c >> 6) & 0x1f)
+          arr[i += 1] = 0x80 + (c & 0x3f)
+        else
+          arr[i] = 0xe0 + ((c >> 12) & 0xf)
+          arr[i += 1] = 0x80 + ((c >> 6) & 0x3f)
+          arr[i += 1] = 0x80 + (c & 0x3f)
+        end
+        i += 1
+      end
+      arr.pack('C*')
+    end
+
     def write_ref(val)
       [ BC_REF ].pack('C') << write_int(val)
     end
@@ -224,40 +239,22 @@ module Hessian2
 
     def write_string(val)
       val = val.to_s unless val.class == String
-      chunks = ''
-      len = val.size
+      chunks, i, len = '', 0, val.size
       while len > 0x8000
-        chunk = val.slice!(0, 0x8000)
-        if chunk.ascii_only?
-          chunks << [ BC_STRING_CHUNK, 0x8000 ].pack('Cn') << chunk
-        else
-          # unpack-pack mixing UTF-8 to ASCII-8BIT
-          chunks << [ BC_STRING_CHUNK, 0x8000, *chunk.unpack('U*') ].pack('CnU*')
-        end
-        len = val.size
+        chunks << [ BC_STRING_CHUNK, 0x8000 ].pack('Cn') << print_string(val[i, i += 0x8000])
+        len -= 0x8000
       end
 
-      if len <= STRING_DIRECT_MAX
-        if val.ascii_only?
-          chunks << [ BC_STRING_DIRECT + len ].pack('C') << val
-        else
-          chunks << [ BC_STRING_DIRECT + len, *val.unpack('U*') ].pack('CU*')
-        end
+      final = val[i..-1]
+      chunks << if len <= STRING_DIRECT_MAX
+        [ BC_STRING_DIRECT + len ].pack('C')
       elsif len <= STRING_SHORT_MAX
-        if val.ascii_only?
-          chunks << [ BC_STRING_SHORT + (len >> 8), len ].pack('CC') << val
-        else
-          chunks << [ BC_STRING_SHORT + (len >> 8), len, *val.unpack('U*') ].pack('CCU*')
-        end
+        [ BC_STRING_SHORT + (len >> 8), len ].pack('CC')
       else
-        if val.ascii_only?
-          chunks << [ BC_STRING, len ].pack('Cn') << val
-        else
-          chunks << [ BC_STRING, len, *val.unpack('U*') ].pack('CnU*')
-        end
+        [ BC_STRING, len ].pack('Cn')
       end
 
-      chunks
+      chunks << print_string(final)
     end
 
     def write_map(val, refs = {}, crefs = {}, trefs = {}, type = nil)
