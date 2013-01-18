@@ -9,8 +9,6 @@ module Hessian2
     attr_accessor :user, :password
     attr_reader :scheme, :host, :port, :path, :proxy
 
-    include Writer
-
     def initialize(url, proxy = {})
       uri = URI.parse(url)
       @scheme, @host, @port, @path = uri.scheme, uri.host, uri.port, uri.path
@@ -29,7 +27,7 @@ module Hessian2
       conn = Net::HTTP.new(@host, @port, *@proxy.values_at(:host, :port, :user, :password))
       conn.use_ssl = true and conn.verify_mode = OpenSSL::SSL::VERIFY_NONE if @scheme == 'https'
       conn.start do |http|
-        body = http.request(req, call(method, args)).body
+        body = http.request(req, Hessian2::Writer.call(method, args)).body
         t0 = Time.new
         data = Hessian2::Parser.parse(body)
         puts "#{Time.new - t0}s"

@@ -9,13 +9,12 @@ get '/' do
 end
 
 post '/monkey' do
-  service = MonkeyService.new
   begin
     status 200
-    service.handle(request.body.read)
+    MonkeyService.handle(request.body.read)
   rescue Exception => e
     status 500
     puts e.message
-    service.reply_fault(e)
+    MonkeyService.reply_fault(e)
   end
 end

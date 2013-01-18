@@ -1,12 +1,11 @@
 # -*- encoding: utf-8 -*-
-
 lib_path = File.expand_path('../../lib', __FILE__)
 $:.unshift(lib_path)
 require 'hessian2'
 require ::File.expand_path('../monkey',  __FILE__)
 
 c1 = Hessian2::Client.new('http://127.0.0.1:9292/monkey')
-list1 = [1, 2, 3 ,4, 5, 6, 7]
+list1 = (1..7).to_a
 map1 = { name: '阿门', age: 7 }
 map2 = { name: '大鸡', age: 6 }
 monkey1 = Monkey.new(map1)
@@ -28,7 +27,7 @@ c1.set_string_x1fu('金' * 0x1f)
 
 # 0x20..0x2f # binary data length 0-15
 c1.set_bin_0(Hessian2::TypeWrapper.new('B', ''))
-c1.set_bin_xf(Hessian2::TypeWrapper.new('B', ['j' * 15].pack('a*')))
+c1.set_bin_xf(Hessian2::TypeWrapper.new('B', ['j' * 0xf].pack('a*')))
 
 # 0x30..0x33 # utf-8 string length 0-1023
 c1.set_string_x20('j' * 0x20)
@@ -82,11 +81,13 @@ c1.set_date_20130112145959(now)
 c1.set_date_201301121459(Time.new(now.year, now.mon, now.day, now.hour, now.min))
 
 # 0x4c # 64-bit signed long integer ('L')
+c1.set_long_mx80_000_001(-0x80_000_001)
+c1.set_long_x80_000_000(0x80_000_000)
 c1.set_long_mx8_000_000_000_000_000(-0x8_000_000_000_000_000)
 c1.set_long_x7_fff_fff_fff_fff_fff(0x7_fff_fff_fff_fff_fff)
 
 # 0x4d # map with type ('M')
-c1.set_monkey_monkey(tmonkey1, tmonkey2)
+c1.set_map(tmonkey1)
 
 # 0x4e # null ('N')
 c1.set_null(nil)

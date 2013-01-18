@@ -2,6 +2,7 @@ package example;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 public interface IMonkeyService {
@@ -118,6 +119,11 @@ public interface IMonkeyService {
 	public void set_long_mx8_000_000_000_000_000(long long1);
 	public void set_long_x7_fff_fff_fff_fff_fff(long long1);
 	
+	// 0x4d # map with type ('M')
+	public Monkey get_map();
+
+	public void set_map(Monkey map1);
+	
 	// 0x4e # null ('N')
 	public Object get_null();
 	
@@ -129,8 +135,12 @@ public interface IMonkeyService {
 	public void set_monkeys(ArrayList<Monkey> monkeys);
 	
 	// 0x51 # reference to map/list/object - integer ('Q')
-	public ArrayList<Map<String, Object>> get_map_map();
+	public ArrayList<Map<String, Object>> get_map_h_map_h();
+	public ArrayList<List> get_direct_untyped_list_list();
+	public ArrayList<List> get_untyped_list_list();
+	public ArrayList<int[]> get_direct_list_list();
 	public ArrayList<int[]> get_list_list();
+	public ArrayList<Monkey> get_monkey_monkey();
 	
 	public void set_map_list_monkey_map_list_monkey(Map<String, Object> map1, int[] list1, Monkey monkey1, 
 			Map<String, Object> map2, int[] list2, Monkey monkey2);
@@ -161,6 +171,7 @@ public interface IMonkeyService {
 	// 0x56 # fixed-length list/vector ('V')
 	// 0x58 # fixed-length untyped list/vector ('X')
 	public int[] get_list();
+	public List get_untyped_list();
 	
 	public void set_list(int[] list1);
 	
@@ -207,6 +218,8 @@ public interface IMonkeyService {
 	// 0x78..0x7f # fixed untyped list with direct length
 	public int[] get_list_size0();
 	public int[] get_list_size7();
+	public List get_untyped_list_size0();
+	public List get_untyped_list_size7();
 	
 	public void set_list_size0(int[] list1);
 	public void set_list_size7(int[] list1);

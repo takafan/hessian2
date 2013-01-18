@@ -57,10 +57,10 @@ module Hessian2
         false
       when 0x48 # untyped map ('H')
         val = {}
+        @refs << val # store a value reference first
         while @data[@i + 1] != BC_END
           val[self.parse_data] = self.parse_data
         end
-        @refs << val # store a value reference
         @i += 1 # skip 'Z'
         val
       when 0x49 # 32-bit signed integer ('I')
@@ -74,10 +74,10 @@ module Hessian2
       when 0x4d # map with type ('M')
         self.parse_string # skip type
         val = {}
+        @refs << val # store a value reference first
         while @data[@i + 1] != BC_END
           val[self.parse_data] = self.parse_data
         end
-        @refs << val # store a value reference
         @i += 1 # skip 'Z'
         val
       when 0x4e # null ('N')
@@ -99,67 +99,70 @@ module Hessian2
       when 0x55 # variable-length list/vector ('U')
         self.parse_string #=> type
         val = []
+        @refs << val # store a value reference first
         while @data[@i + 1] != BC_END
           val << self.parse_data
         end
-        @refs << val # store a value reference
         @i += 1 # skip 'Z'
         val
       when 0x56 # fixed-length list/vector ('V')
         self.parse_string # skip type
         len = self.parse_int
-        val = Array.new(len).tap do |arr|
-          len.times{|i| arr[i] = self.parse_data }
-        end
+        val = Array.new(len)
         @refs << val # store a value reference
+        len.times do |i| 
+          val[i] = self.parse_data
+        end
         val
       when 0x57 # variable-length untyped list/vector ('W')
         val = []
+        @refs << val # store a value reference first
         while @data[@i + 1] != BC_END
           val << self.parse_data
         end
-        @refs << val # store a value reference
         @i += 1 # skip 'Z'
         val
       when 0x58 # fixed-length untyped list/vector ('X')
         len = self.parse_int
-        val = Array.new(len).tap do |arr|
-          len.times{|i| arr[i] = self.parse_data }
+        val = Array.new(len)
+        @refs << val # store a value reference first
+        len.times do |i| 
+          val[i] = self.parse_data 
         end
-        @refs << val # store a value reference
         val
       when 0x59 # long encoded as 32-bit int ('Y')
-        self.read_long_int
+        self.read_int
       when 0x5b # double 0.0
         0
       when 0x5c # double 1.0
         1
       when 0x5d # double represented as byte (-128.0 to 127.0)
-        self.read
+        self.read_double_direct
       when 0x5e # double represented as short (-32768.0 to 32767.0)
         self.read_double_short
       when 0x5f # double represented as float
         self.read_double_mill
       when 0x60..0x6f # object with direct type
-        obj = {}.tap do |o|
-          @cdefs[bc - BC_OBJECT_DIRECT].each{ |f| o[f] = self.parse_data }
+        obj = {}
+        @refs << obj # store a value reference first
+        @cdefs[bc - BC_OBJECT_DIRECT].each do |f| 
+          obj[f] = self.parse_data
         end
-        @refs << obj
         obj
       when 0x70..0x77 # fixed list with direct length
         self.parse_string # skip type
         val = []
+        @refs << val # store a value reference first
         (bc - BC_LIST_DIRECT).times do
           val << self.parse_data
         end
-        @refs << val # store a value reference
         val
       when 0x78..0x7f # fixed untyped list with direct length
         val = []
+        @refs << val # store a value reference first
         (bc - BC_LIST_DIRECT_UNTYPED).times do
           val << self.parse_data
         end
-        @refs << val # store a value reference
         val
       when 0x80..0xbf # one-octet compact int (-x10 to x3f, x90 is 0)
         self.read_int_zero(bc)
@@ -187,6 +190,22 @@ module Hessian2
         ((bc & 0x0f) << 12) + ((self.read & 0x3f) << 6) + (self.read & 0x3f)
       else
         raise Fault.new, "bad utf-8 encoding at '#{bc}'"
+      end
+    end
+
+    def self.parse_binary
+      bc = self.read
+      case bc
+      when 0x20..0x2f
+        self.read_binary_direct(bc)
+      when 0x34..0x37
+        self.read_binary_short(bc)
+      when 0x41
+        self.read_binary_chunk
+      when 0x42
+        self.read_binary
+      else
+        raise Fault.new, "'#{bc}' is not a binary"
       end
     end
 
@@ -227,66 +246,75 @@ module Hessian2
     end
 
     def self.read_binary_direct(bc)
-      @data[@i...(@i + bc - BC_BINARY_DIRECT)].pack('C*')
+      len = bc - BC_BINARY_DIRECT
+      Array.new(len).tap do |chars|
+        len.times{|i| chars[i] = self.parse_utf8_char }
+      end.pack('U*')
     end
 
     def self.read_binary_short(bc)
       len = ((bc - BC_BINARY_SHORT) << 8) + self.read
-      @data[@i...(@i += len)].pack('C*')
+      Array.new(len).tap do |chars|
+        len.times{|i| chars[i] = self.parse_utf8_char }
+      end.pack('U*')
     end
 
-    def self.read_binary_large
+    def self.read_binary_chunk
       chunks = []
       chunks << self.read_binary
-      while(@data[@i += 1] == BC_BINARY_CHUNK)
+      while(@data[@i + 1] == BC_BINARY_CHUNK)
+        self.read # skip 'A'
         chunks << self.read_binary
       end
-      @i += 1 # skip 'B'
-      chunks << self.read_binary
+      chunks << self.parse_binary
       chunks.join
     end
 
     def self.read_binary
-      # len = @data[@i...(@i += 2)].unpack('n')[0]
       len = (self.read << 8) + self.read
-      @data[@i...(@i += len)].pack('C*')
+      Array.new(len).tap do |chars|
+        len.times{|i| chars[i] = self.parse_utf8_char }
+      end.pack('U*')
     end
 
     def self.read_date
-      # val = @data[@i...(@i += 8)].unpack('Q>')[0]
-      val = (self.read << 56) + (self.read << 48) + (self.read << 40) + (self.read << 32) 
-        + (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
+      val = [
+        self.read, self.read, self.read, self.read, 
+        self.read, self.read, self.read, self.read
+      ].pack('C*').unpack('Q>')[0]
       Time.at(val / 1000, val % 1000 * 1000)
     end
 
     def self.read_date_minute
-      # val = @data[@i...(@i += 4)].unpack('L>')[0]
       val = (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
       Time.at(val * 60)
     end
 
     def self.read_double
-      # @data[@i...(@i += 8)].unpack('G')[0]
       [
         self.read, self.read, self.read, self.read, 
         self.read, self.read, self.read, self.read
       ].pack('C*').unpack('G')[0]
     end
 
+    def self.read_double_direct
+      [self.read].pack('C').unpack('c')[0]
+    end
+
     def self.read_double_short
-      (self.read << 8) + self.read
+      [self.read, self.read].pack('C*').unpack('s>')[0]
     end
 
     def self.read_double_mill
-      # @data[@i...(@i += 4)].unpack('g')[0]
       [
         self.read, self.read, self.read, self.read
       ].pack('C*').unpack('g')[0]
     end
 
     def self.read_int
-      # @data[@i...(@i += 4)].unpack('l>')[0]
-      (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
+      [
+        self.read, self.read, self.read, self.read
+      ].pack('C*').unpack('l>')[0]
     end
 
     def self.read_int_zero(bc)
@@ -302,9 +330,10 @@ module Hessian2
     end
 
     def self.read_long
-      # @data[@i...(@i += 8)].unpack('q>')[0]
-      (self.read << 56) + (self.read << 48) + (self.read << 40) + (self.read << 32) 
-        + (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
+      [
+        self.read, self.read, self.read, self.read, 
+        self.read, self.read, self.read, self.read
+      ].pack('C*').unpack('q>')[0]
     end
 
     def self.read_long_zero(bc)
@@ -317,11 +346,6 @@ module Hessian2
 
     def self.read_long_short_zero(bc)
       ((bc - BC_LONG_SHORT_ZERO) << 16) + (self.read << 8) + self.read
-    end
-
-    def self.read_long_int
-      # @data[@i...(@i += 4)].unpack('l>')[0]
-      (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
     end
 
     def self.read_string_direct(bc)
@@ -341,16 +365,16 @@ module Hessian2
     def self.read_string_chunk
       chunks = []
       chunks << self.read_string
-      while(@data[@i += 1] == 0x52)
+      while(@data[@i + 1] == BC_STRING_CHUNK)
+        self.read # skip 'R'
         chunks << self.read_string
       end
-      @i += 1 # skip 'S'
-      chunks << self.read_string
+      chunks << self.parse_string
       chunks.join
     end
 
     def self.read_string
-      len = @data[@i...(@i += 2)].unpack('n')[0]
+      len = (self.read << 8) + self.read
       Array.new(len).tap do |chars|
         len.times{|i| chars[i] = self.parse_utf8_char }
       end.pack('U*')

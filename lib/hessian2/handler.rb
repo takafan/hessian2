@@ -3,10 +3,9 @@ require 'hessian2/writer'
 
 module Hessian2
   module Handler
-    include Writer
 
-    def handle(call)
-      reply(self.send(*Hessian2::Parser.parse(call)))
+    def self.handle(data)
+      Hessian2::Writer.reply(self.send(*Hessian2::Parser.parse(data)))
     end
 
   end
