@@ -278,10 +278,14 @@ module Hessian2
     end
 
     def self.read_date
-      val = [
-        self.read, self.read, self.read, self.read, 
-        self.read, self.read, self.read, self.read
-      ].pack('C*').unpack('Q>')[0]
+      puts @data[@i, 8].join(', ')
+      # 74, 0, 0, 1, 60, 45, 142, 205
+      # 0, 0, 1, 60, 45, 142, 205, 152
+      # val = (self.read << 56) + (self.read << 48) + (self.read << 40) + (self.read << 32) 
+      #   + (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
+      # val = (self.read + 0x4e) + (self.read << 56) + (self.read << 48) + (self.read << 40) 
+      #   + (self.read << 32) + (self.read << 24) + (self.read << 16) + (self.read << 8)
+      puts val
       Time.at(val / 1000, val % 1000 * 1000)
     end
 
@@ -298,11 +302,21 @@ module Hessian2
     end
 
     def self.read_double_direct
-      [self.read].pack('C').unpack('c')[0]
+      bc = self.read
+      if bc < 0x80
+        bc
+      else
+        -(0xff - bc + 1)
+      end
     end
 
     def self.read_double_short
-      [self.read, self.read].pack('C*').unpack('s>')[0]
+      bc1, bc0 = self.read, self.read
+      if bc1 < 0x80
+        (bc1 << 8) + bc0
+      else
+        -(((0xff - bc1) << 8) + 0xff - bc0 + 1)
+      end
     end
 
     def self.read_double_mill
@@ -312,9 +326,12 @@ module Hessian2
     end
 
     def self.read_int
-      [
-        self.read, self.read, self.read, self.read
-      ].pack('C*').unpack('l>')[0]
+      bc3, bc2, bc1, bc0 = self.read, self.read, self.read, self.read
+      if bc3 < 0x80
+        (bc3 << 24) + (bc2 << 16) + (bc1 << 8) + bc0
+      else
+        -(((0xff - bc3) << 24) + ((0xff - bc2) << 16) + ((0xff - bc1) << 8) + 0xff - bc0 + 1)
+      end
     end
 
     def self.read_int_zero(bc)
