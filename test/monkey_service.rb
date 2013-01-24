@@ -377,7 +377,11 @@ class MonkeyService
     list1, list1
   end
 
-  def self.get_direct_list_list();
+  def self.get_direct_list_list
+    list1 = self.get_list_size7
+    list1, list1
+  end
+
   def self.get_list_list();
   def self.get_monkey_monkey();
   
@@ -409,8 +413,11 @@ class MonkeyService
   
   # 0x56 # fixed-length list/vector ('V')
   # 0x58 # fixed-length untyped list/vector ('X')
-  def self.get_list();
-  def self.get_untyped_list();
+  def self.get_list
+  end
+  
+  def self.get_untyped_list
+  end
   
   def self.set_list(int[] list1);
   

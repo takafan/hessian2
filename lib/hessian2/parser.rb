@@ -279,8 +279,8 @@ module Hessian2
 
     def self.read_date
       puts @data[@i, 8].join(', ')
-      # 74, 0, 0, 1, 60, 45, 142, 205
-      # 0, 0, 1, 60, 45, 142, 205, 152
+      # get: 74, 0, 0, 1, 60, 45, 142, 205
+      # except: 0, 0, 1, 60, 45, 142, 205, 152
       # val = (self.read << 56) + (self.read << 48) + (self.read << 40) + (self.read << 32) 
       #   + (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
       # val = (self.read + 0x4e) + (self.read << 56) + (self.read << 48) + (self.read << 40) 
