@@ -278,14 +278,7 @@ module Hessian2
     end
 
     def self.read_date
-      puts @data[@i, 8].join(', ')
-      # get: 74, 0, 0, 1, 60, 45, 142, 205
-      # except: 0, 0, 1, 60, 45, 142, 205, 152
-      # val = (self.read << 56) + (self.read << 48) + (self.read << 40) + (self.read << 32) 
-      #   + (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
-      # val = (self.read + 0x4e) + (self.read << 56) + (self.read << 48) + (self.read << 40) 
-      #   + (self.read << 32) + (self.read << 24) + (self.read << 16) + (self.read << 8)
-      puts val
+      val = self.read_long
       Time.at(val / 1000, val % 1000 * 1000)
     end
 
@@ -295,6 +288,7 @@ module Hessian2
     end
 
     def self.read_double
+      # longBitsToDouble(long bits)
       [
         self.read, self.read, self.read, self.read, 
         self.read, self.read, self.read, self.read
@@ -320,6 +314,7 @@ module Hessian2
     end
 
     def self.read_double_mill
+      # longBitsToDouble(long bits)
       [
         self.read, self.read, self.read, self.read
       ].pack('C*').unpack('g')[0]
@@ -347,10 +342,8 @@ module Hessian2
     end
 
     def self.read_long
-      [
-        self.read, self.read, self.read, self.read, 
-        self.read, self.read, self.read, self.read
-      ].pack('C*').unpack('q>')[0]
+      (self.read << 56) + (self.read << 48) + (self.read << 40) + (self.read << 32) \
+        + (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
     end
 
     def self.read_long_zero(bc)

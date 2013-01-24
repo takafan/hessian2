@@ -10,7 +10,8 @@ def print_assert(method, t)
   puts "#{t ? '.' :  '*' * 10 << 'fail'} #{method}"
 end
 
-puts c1.get_date_20130112145959
+#puts c1.get_date_20130112145959
+#puts c1.get_date_201301121459
 
 # # 0x00..0x1f # utf-8 string length 0-31
 # v = c1.get_string_0
