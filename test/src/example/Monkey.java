@@ -2,16 +2,16 @@ package example;
 
 import java.io.Serializable;
 
-public class Person implements Serializable {
+public class Monkey implements Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;   
 	
-	private int age;
-	private String name;
+	public int age;
+	public String name;
 	
-	public Person(){}
+	public Monkey(){}
 
 	public int getAge() {
 		return age;
@@ -29,4 +29,3 @@ public class Person implements Serializable {
 		this.name = name;
 	}
 }
-

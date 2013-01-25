@@ -288,7 +288,7 @@ module Hessian2
     end
 
     def self.read_double
-      # longBitsToDouble(long bits)
+      # TODO longBitsToDouble(long bits)
       [
         self.read, self.read, self.read, self.read, 
         self.read, self.read, self.read, self.read
@@ -314,7 +314,7 @@ module Hessian2
     end
 
     def self.read_double_mill
-      # longBitsToDouble(long bits)
+      # TODO longBitsToDouble(long bits)
       [
         self.read, self.read, self.read, self.read
       ].pack('C*').unpack('g')[0]
@@ -342,8 +342,14 @@ module Hessian2
     end
 
     def self.read_long
-      (self.read << 56) + (self.read << 48) + (self.read << 40) + (self.read << 32) \
-        + (self.read << 24) + (self.read << 16) + (self.read << 8) + self.read
+      bc7, bc6, bc5, bc4, bc3, bc2, bc1, bc0 = self.read, self.read, self.read, self.read, self.read, self.read, self.read, self.read
+      if bc7 < 0x80
+        (bc7 << 56) + (bc6 << 48) + (bc5 << 40) + (bc4 << 32) \
+          + (bc3 << 24) + (bc2 << 16) + (bc1 << 8) + bc0
+      else
+        -(((0xff - bc7) << 56) + ((0xff - bc6) << 48) + ((0xff - bc5) << 40) + ((0xff - bc4) << 32) \
+          + ((0xff - bc3) << 24) + ((0xff - bc2) << 16) + ((0xff - bc1) << 8) + 0xff - bc0 + 1)
+      end
     end
 
     def self.read_long_zero(bc)
