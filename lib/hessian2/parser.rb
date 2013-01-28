@@ -164,7 +164,7 @@ module Hessian2
           val << self.parse_data
         end
         val
-      when 0x80..0xbf # one-octet compact int (-x10 to x3f, x90 is 0)
+      when 0x80..0xbf # one-octet compact int (-x10 to x2f, x90 is 0)
         self.read_int_zero(bc)
       when 0xc0..0xcf # two-octet compact int (-x800 to x7ff)
         self.read_int_byte_zero(bc)
@@ -182,11 +182,11 @@ module Hessian2
     private
     def self.parse_utf8_char
       bc = self.read
-      if bc < 0x80
+      if bc < 0x80 # 0xxxxxxx
         bc
-      elsif bc & 0xe0 == 0xc0
+      elsif bc & 0xe0 == 0xc0 # 110xxxxx 10xxxxxx
         ((bc & 0x1f) << 6) + (self.read & 0x3f)
-      elsif bc & 0xf0 == 0xe0
+      elsif bc & 0xf0 == 0xe0 # 1110xxxx 10xxxxxx 10xxxxxx
         ((bc & 0x0f) << 12) + ((self.read & 0x3f) << 6) + (self.read & 0x3f)
       else
         raise Fault.new, "bad utf-8 encoding at '#{bc}'"
@@ -293,6 +293,16 @@ module Hessian2
         self.read, self.read, self.read, self.read, 
         self.read, self.read, self.read, self.read
       ].pack('C*').unpack('G')[0]
+      b64, b56, b48, b40, b32, b24, b16, b8 = self.read, self.read, self.read, self.read, self.read, self.read, self.read, self.read
+      b52 = b56 >> 4
+      s = b64 < 0x80 ? 1 : -1
+      e = (b64 >> 1) * (b56 - b52) - 0x3ff
+      if b64 < 0x80
+        f = (b52 << 44) + (b48 << 40) + (b40 << 32) + (b32 << 24) + (b24 << 16) + (b16 << 8) + b8
+      else
+        f = -(((0xff - b52) << 44) + ((0xff - b48) << 40) + ((0xff - b40) << 32) \
+          + ((0xff - b32) << 24) + ((0xff - b24) << 16) + ((0xff - b16) << 8) + 0xff - b8 + 1)
+      end
     end
 
     def self.read_double_direct
@@ -305,11 +315,11 @@ module Hessian2
     end
 
     def self.read_double_short
-      bc1, bc0 = self.read, self.read
-      if bc1 < 0x80
-        (bc1 << 8) + bc0
+      b16, b8 = self.read, self.read
+      if b16 < 0x80
+        (b16 << 8) + b8
       else
-        -(((0xff - bc1) << 8) + 0xff - bc0 + 1)
+        -(((0xff - b16) << 8) + 0xff - b8 + 1)
       end
     end
 
@@ -321,11 +331,11 @@ module Hessian2
     end
 
     def self.read_int
-      bc3, bc2, bc1, bc0 = self.read, self.read, self.read, self.read
-      if bc3 < 0x80
-        (bc3 << 24) + (bc2 << 16) + (bc1 << 8) + bc0
+      b32, b24, b16, b8 = self.read, self.read, self.read, self.read
+      if b32 < 0x80
+        (b32 << 24) + (b24 << 16) + (b16 << 8) + b8
       else
-        -(((0xff - bc3) << 24) + ((0xff - bc2) << 16) + ((0xff - bc1) << 8) + 0xff - bc0 + 1)
+        -(((0xff - b32) << 24) + ((0xff - b24) << 16) + ((0xff - b16) << 8) + 0xff - b8 + 1)
       end
     end
 
@@ -342,13 +352,13 @@ module Hessian2
     end
 
     def self.read_long
-      bc7, bc6, bc5, bc4, bc3, bc2, bc1, bc0 = self.read, self.read, self.read, self.read, self.read, self.read, self.read, self.read
-      if bc7 < 0x80
-        (bc7 << 56) + (bc6 << 48) + (bc5 << 40) + (bc4 << 32) \
-          + (bc3 << 24) + (bc2 << 16) + (bc1 << 8) + bc0
+      b64, b56, b48, b40, b32, b24, b16, b8 = self.read, self.read, self.read, self.read, self.read, self.read, self.read, self.read
+      if b64 < 0x80
+        (b64 << 56) + (b56 << 48) + (b48 << 40) + (b40 << 32) \
+          + (b32 << 24) + (b24 << 16) + (b16 << 8) + b8
       else
-        -(((0xff - bc7) << 56) + ((0xff - bc6) << 48) + ((0xff - bc5) << 40) + ((0xff - bc4) << 32) \
-          + ((0xff - bc3) << 24) + ((0xff - bc2) << 16) + ((0xff - bc1) << 8) + 0xff - bc0 + 1)
+        -(((0xff - b64) << 56) + ((0xff - b56) << 48) + ((0xff - b48) << 40) + ((0xff - b40) << 32) \
+          + ((0xff - b32) << 24) + ((0xff - b24) << 16) + ((0xff - b16) << 8) + 0xff - b8 + 1)
       end
     end
 
