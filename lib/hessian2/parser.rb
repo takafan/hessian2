@@ -52,6 +52,7 @@ module Hessian2
         end # store a class reference
         self.parse_data
       when 0x44 # 64-bit IEEE encoded double ('D')
+        puts '0x44'
         self.read_double
       when 0x46 # boolean false ('F')
         false
@@ -141,6 +142,7 @@ module Hessian2
       when 0x5e # double represented as short (-32768.0 to 32767.0)
         self.read_double_short
       when 0x5f # double represented as float
+        puts '0x5f'
         self.read_double_mill
       when 0x60..0x6f # object with direct type
         obj = {}
@@ -289,20 +291,38 @@ module Hessian2
 
     def self.read_double
       # TODO longBitsToDouble(long bits)
-      [
-        self.read, self.read, self.read, self.read, 
-        self.read, self.read, self.read, self.read
-      ].pack('C*').unpack('G')[0]
-      b64, b56, b48, b40, b32, b24, b16, b8 = self.read, self.read, self.read, self.read, self.read, self.read, self.read, self.read
-      b52 = b56 >> 4
-      s = b64 < 0x80 ? 1 : -1
-      e = (b64 >> 1) * (b56 - b52) - 0x3ff
-      if b64 < 0x80
-        f = (b52 << 44) + (b48 << 40) + (b40 << 32) + (b32 << 24) + (b24 << 16) + (b16 << 8) + b8
-      else
-        f = -(((0xff - b52) << 44) + ((0xff - b48) << 40) + ((0xff - b40) << 32) \
-          + ((0xff - b32) << 24) + ((0xff - b24) << 16) + ((0xff - b16) << 8) + 0xff - b8 + 1)
-      end
+      # [
+      #   self.read, self.read, self.read, self.read, 
+      #   self.read, self.read, self.read, self.read
+      # ].pack('C*').unpack('G')[0]
+      # 1.7976931348623157e+308
+      # b64 127 >> 1 => 63
+      # b56 239 >> 4 => 14
+      # b64, b56, b48, b40, b32, b24, b16, b8 = self.read, self.read, self.read, self.read, self.read, self.read, self.read, self.read
+      
+      # b52 = b56 >> 4
+      # s = b64 < 0x80 ? 1 : -1
+      # e = b64 * (b56 >> 4) - 0x3ff
+      # if b64 < 0x80
+      #   f = ((b56 & 0xf) << 44) + (b48 << 40) + (b40 << 32) + (b32 << 24) + (b24 << 16) + (b16 << 8) + b8
+      #   puts f
+      # else
+      #   f = -(((0xff - b52) << 44) + ((0xff - b48) << 40) + ((0xff - b40) << 32) \
+      #     + ((0xff - b32) << 24) + ((0xff - b24) << 16) + ((0xff - b16) << 8) + 0xff - b8 + 1)
+      # end
+
+      # if e == 0
+      #   f
+      # elsif e > 0
+      #   f * 10 * e
+      # elsif e < 0
+      #   f * 0.1 * e
+      # end
+      bits = self.read_long
+      s = (bits >> 63) == 0 ? 1 : -1
+      e = (bits >> 52) & 0x7ff
+      m = (e == 0) ? (bits & 0xfffffffffffff) << 1 : (bits & 0xfffffffffffff) | 0x10000000000000
+      s * m * 2**(e-1075)
     end
 
     def self.read_double_direct
@@ -324,10 +344,7 @@ module Hessian2
     end
 
     def self.read_double_mill
-      # TODO longBitsToDouble(long bits)
-      [
-        self.read, self.read, self.read, self.read
-      ].pack('C*').unpack('g')[0]
+      0.001 * self.read_int
     end
 
     def self.read_int

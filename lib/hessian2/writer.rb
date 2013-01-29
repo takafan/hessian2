@@ -87,7 +87,13 @@ module Hessian2
           return [ BC_DOUBLE_BYTE, ival ].pack('Cc') if (-0x80..0x7f).include?(ival) # double octet
           return [ BC_DOUBLE_SHORT, (ival >> 8), ival ].pack('Ccc') if (-0x8000..0x7fff).include?(ival) # double short
         end
-        [ BC_DOUBLE, val ].pack('CG') # double
+        mills = (val * 1000).to_i
+        if 0.001 * mills == val
+          [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
+        else
+          # D doubleToLongBits(val)
+          [ BC_DOUBLE, val ].pack('CG') # double
+        end
       when Fixnum
         if type and %w[ L Long long ].include?(type)
           case val
