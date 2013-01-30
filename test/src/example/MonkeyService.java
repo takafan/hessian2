@@ -292,6 +292,26 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		return Double.MAX_VALUE;
 	}
 	
+	public double get_double_positive_infinity()
+	{
+		return Double.POSITIVE_INFINITY;
+	}
+	
+	public double get_double_negative_infinity()
+	{
+		return Double.NEGATIVE_INFINITY;
+	}
+	
+	public double get_double_nan()
+	{
+		return Double.NaN;
+	}
+	
+	public double get_123dot456()
+	{
+		return 123.456d;
+	}
+	
 	public void set_double_min(double double1)
 	{
 		boolean isT = double1 == Double.MIN_VALUE;
@@ -302,6 +322,30 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	{
 		boolean isT = double1 == Double.MAX_VALUE;
 		printAssert("set_double_max", isT);
+	}
+	
+	public void set_double_positive_infinity(double double1)
+	{
+		boolean isT = double1 == Double.POSITIVE_INFINITY;
+		printAssert("set_double_positive_infinity", isT);
+	}
+	
+	public void set_double_negative_infinity(double double1)
+	{
+		boolean isT = double1 == Double.NEGATIVE_INFINITY;
+		printAssert("set_double_negative_infinity", isT);
+	}
+	
+	public void set_double_nan(double double1)
+	{
+		boolean isT = String.valueOf(double1).equals("NaN");
+		printAssert("set_double_nan", isT);
+	}
+	
+	public void set_123dot456(double double1)
+	{
+		boolean isT = double1 == 123.456d;
+		printAssert("set_123dot456", isT);
 	}
 	
 	// 0x46 # boolean false ('F')
@@ -380,6 +424,11 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	public Date get_date_20130112145959()
 	{
 		return new Date(1357973999000L);
+	}
+	
+	public long get_long_20130112145959()
+	{
+		return 1357973999000L;
 	}
 	
 	public void set_date_20130112145959(Date date1)
@@ -887,7 +936,7 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		printAssert("set_list_size7", isT);
 	}
 	
-	// 0x80..0xbf # one-octet compact int (-x10 to x3f, x90 is 0)
+	// 0x80..0xbf # one-octet compact int (-x10 to x2f, x90 is 0)
 	public int get_int_mx10()
 	{
 		return -0x10;
@@ -1070,7 +1119,7 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	
 	private void printAssert(String meth, boolean isT)
 	{
-		System.out.println((isT ? "." : "fail") + " " + meth);
+		System.out.println((isT ? "." : "**********fail") + " " + meth);
 	}
 	
 }

@@ -73,9 +73,17 @@ public interface IMonkeyService {
 	// 0x44 # 64-bit IEEE encoded double ('D')
 	public double get_double_min();
 	public double get_double_max();
+	public double get_double_positive_infinity();
+	public double get_double_negative_infinity();
+	public double get_double_nan();
+	public double get_123dot456();
 	
 	public void set_double_min(double double1); // 4.9E-324
 	public void set_double_max(double double1); // 1.7976931348623157E308
+	public void set_double_positive_infinity(double double1);
+	public void set_double_negative_infinity(double double1);
+	public void set_double_nan(double double1);
+	public void set_123dot456(double double1);
 	
 	// 0x46 # boolean false ('F')
 	public boolean get_false();
@@ -100,6 +108,7 @@ public interface IMonkeyService {
 	
 	// 0x4a # 64-bit UTC millisecond date
 	public Date get_date_20130112145959();
+	public long get_long_20130112145959();
 	
 	public void set_date_20130112145959(Date date1);
 	
@@ -224,7 +233,7 @@ public interface IMonkeyService {
 	public void set_list_size0(int[] list1);
 	public void set_list_size7(int[] list1);
 	
-	// 0x80..0xbf # one-octet compact int (-x10 to x3f, x90 is 0)
+	// 0x80..0xbf # one-octet compact int (-x10 to x2f, x90 is 0)
 	public int get_int_mx10();
 	public int get_int_x3f();
 	

@@ -1,6 +1,6 @@
 = hessian2
 
-sending data, fast.
+send data, using json, or hessian2 here.
 
 == client
 
@@ -16,12 +16,23 @@ sending data, fast.
   client.get_monkey
 
 == type wrapper
+  
+  # send a file as binary
+  binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
+
+  client.send_lighthouse(Hessian2::TypeWrapper.new('B', binstr))
+
+== class wrapper
+  
+  # send a hash as Monkey
+  hash = {name: '阿门', age: 7}
+
+  client.send_monkey(Hessian2::ClassWrapper.new('example.Monkey', hash))
 
 == service
 
 == todo
 
-benchmark
 supports packet+ and envelope+
 
 == authors

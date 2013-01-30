@@ -6,13 +6,10 @@ require ::File.expand_path('../monkey',  __FILE__)
 
 c1 = Hessian2::Client.new('http://127.0.0.1:9292/monkey')
 
-puts c1.get_double_nan.nan?
-puts c1.get_double_max_plus_1.nan?
-
 def print_assert(method, t)
   puts "#{t ? '.' :  '*' * 10 << 'fail'} #{method}"
 end
-
+c1.get_string_x1f
 # # 0x00..0x1f # utf-8 string length 0-31
 # v = c1.get_string_0
 # print_assert 'get_string_0', v == ''
@@ -73,6 +70,14 @@ end
 # print_assert 'get_double_min', v == 4.9E-324
 # v = c1.get_double_max
 # print_assert 'get_double_max', v == 1.7976931348623157E308
+# v = c1.get_double_positive_infinity 
+# print_assert 'get_double_positive_infinity', v == Float::INFINITY
+# v = c1.get_double_negative_infinity
+# print_assert 'get_double_negative_infinity', v == -Float::INFINITY
+# v = c1.get_double_nan
+# print_assert 'get_double_nan', v.to_s.upcase == 'NAN'
+# v = c1.get_123dot456
+# print_assert 'get_123dot456', v == 123.456
 
 # # 0x46 # boolean false ('F')
 # v = c1.get_false

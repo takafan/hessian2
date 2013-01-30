@@ -1,5 +1,3 @@
-# http://hessian.caucho.com/doc/hessian-ws.html
-# http://hessian.caucho.com/doc/hessian-serialization.html
 require 'hessian2/class_wrapper'
 require 'hessian2/client'
 require 'hessian2/fault'

@@ -31,7 +31,6 @@ module Hessian2
         idx = refs[val.object_id]
         return self.write_ref(idx) if idx
         refs[val.object_id] = refs.size # store a value reference
-
         klass = val.hessian_class
         obj = val.object
         if crefs.include?(klass)
@@ -39,7 +38,6 @@ module Hessian2
           str = ''
         else
           cidx = crefs[klass] = crefs.size # store a class definition
-
           if obj.class == Hash
             vars = obj.keys
           else
@@ -50,13 +48,11 @@ module Hessian2
             str << self.write_string(var)
           end
         end
-
         if cidx <= OBJECT_DIRECT_MAX
           str << [ BC_OBJECT_DIRECT + cidx ].pack('C')
         else
           str << [ BC_OBJECT ].pack('C') << self.write_int(cidx)
         end
-
         if obj.class == Hash
           vvals = obj.values
         else
@@ -65,7 +61,6 @@ module Hessian2
         vvals.each do |vval|
           str << self.write_object(vval, refs, crefs, trefs)
         end
-
         str
       when TypeWrapper
         self.write_object(val.object, refs, crefs, trefs, val.hessian_type)
@@ -80,18 +75,27 @@ module Hessian2
           [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('CQ>') # date
         end
       when Float
-        return [ BC_DOUBLE_ZERO ].pack('C') if val.zero? # double zero
-        return [ BC_DOUBLE_ONE ].pack('C') if val == 1 # double one
-        ival = val.to_i
-        if ival == val
-          return [ BC_DOUBLE_BYTE, ival ].pack('Cc') if (-0x80..0x7f).include?(ival) # double octet
-          return [ BC_DOUBLE_SHORT, (ival >> 8), ival ].pack('Ccc') if (-0x8000..0x7fff).include?(ival) # double short
-        end
-        mills = (val * 1000).to_i
-        if 0.001 * mills == val
-          [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
+        case val.infinite?
+        when 1
+          return [ BC_DOUBLE, Float::INFINITY ].pack('CG')
+        when -1
+          return [ BC_DOUBLE, -Float::INFINITY ].pack('CG')
         else
-          # D doubleToLongBits(val)
+          return [ BC_DOUBLE, Float::NAN ].pack('CG') if val.nan?
+          return [ BC_DOUBLE_ZERO ].pack('C') if val.zero? # double zero
+          return [ BC_DOUBLE_ONE ].pack('C') if val == 1 # double one
+          ival = val.to_i
+          if ival == val
+            return [ BC_DOUBLE_BYTE, ival ].pack('Cc') if (-0x80..0x7f).include?(ival) # double octet
+            return [ BC_DOUBLE_SHORT, (ival >> 8), ival ].pack('Ccc') if (-0x8000..0x7fff).include?(ival) # double short
+          end
+          mval = val * 1000
+          if mval.finite?
+            mills = mval.to_i
+            if (-0x80_000_000..0x7f_fff_fff).include?(mills) and 0.001 * mills == val
+              [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
+            end
+          end
           [ BC_DOUBLE, val ].pack('CG') # double
         end
       when Fixnum
@@ -113,7 +117,6 @@ module Hessian2
         idx = refs[val.object_id]
         return self.write_ref(idx) if idx
         refs[val.object_id] = refs.size # store a value reference
-        
         if type
           if trefs.include?(type)
             tstr = self.write_int(trefs[type])
@@ -121,7 +124,6 @@ module Hessian2
             trefs[type] = trefs.size # store a type
             tstr = self.write_string(type)
           end
-
           len = val.size
           if len <= LIST_DIRECT_MAX # [x70-77] type value*
             str = [ BC_LIST_DIRECT + len ].pack('C') << tstr
@@ -136,11 +138,9 @@ module Hessian2
             str = [ BC_LIST_FIXED_UNTYPED ].pack('C') << self.write_int(len)
           end
         end
-
         val.each do |v|
           str << self.write_object(v, refs, crefs, trefs)
         end
-
         str
       when Bignum
         if (-0x80_000_000..0x7f_fff_fff).include?(val) # four octet longs
@@ -159,7 +159,6 @@ module Hessian2
             chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << val[i...(i += 0x8000)]
             len -= 0x8000
           end
-
           final = val[i..-1]
           if len <= BINARY_DIRECT_MAX
             chunks << [ BC_BINARY_DIRECT + len ].pack('C') << final
@@ -168,7 +167,6 @@ module Hessian2
           else
             chunks << [ BC_BINARY, len ].pack('Cn') << final
           end
-
           chunks.join
         else
           self.write_string(val)
@@ -179,7 +177,6 @@ module Hessian2
         idx = refs[val.object_id]
         return self.write_ref(idx) if idx
         refs[val.object_id] = refs.size # store a value reference
-
         klass = val.class
         if crefs.include?(klass)
           cidx = crefs[klass]
@@ -192,18 +189,15 @@ module Hessian2
             str << self.write_string(var)
           end
         end
-
         if cidx <= OBJECT_DIRECT_MAX
           str << [ BC_OBJECT_DIRECT + cidx ].pack('C')
         else
           str << [ BC_OBJECT ].pack('C') << self.write_int(cidx)
         end
-
         vvals = val.instance_variables.map{|sym| val.instance_variable_get(sym)}
         vvals.each do |vval|
           str << self.write_object(vval, refs, crefs, trefs)
         end
-
         str
       end
     end
@@ -211,12 +205,12 @@ module Hessian2
     def self.print_string(str)
       arr, i = Array.new(str.bytesize), 0
       str.unpack('U*').each do |c|
-        if c < 0x80
+        if c < 0x80 # 0xxxxxxx
           arr[i] = c
-        elsif c < 0x800
+        elsif c < 0x800 # 110xxxxx 10xxxxxx
           arr[i] = 0xc0 + ((c >> 6) & 0x1f)
           arr[i += 1] = 0x80 + (c & 0x3f)
-        else
+        else # 1110xxxx 10xxxxxx 10xxxxxx
           arr[i] = 0xe0 + ((c >> 12) & 0xf)
           arr[i += 1] = 0x80 + ((c >> 6) & 0x3f)
           arr[i += 1] = 0x80 + (c & 0x3f)
@@ -250,7 +244,6 @@ module Hessian2
         chunks << [ BC_STRING_CHUNK, 0x8000 ].pack('Cn') << self.print_string(val[i, i += 0x8000])
         len -= 0x8000
       end
-
       final = val[i..-1]
       chunks << if len <= STRING_DIRECT_MAX
         [ BC_STRING_DIRECT + len ].pack('C')
@@ -259,7 +252,6 @@ module Hessian2
       else
         [ BC_STRING, len ].pack('Cn')
       end
-
       chunks << self.print_string(final)
     end
 
@@ -267,7 +259,6 @@ module Hessian2
       idx = refs[val.object_id]
       return self.write_ref(idx) if idx
       refs[val.object_id] = refs.size # store a value reference
-
       if type
         if trefs.include?(type)
           tstr = self.write_int(trefs[type])
@@ -275,17 +266,14 @@ module Hessian2
           trefs[type] = trefs.size # store a type
           tstr = self.write_string(type)
         end
-
         str = [ BC_MAP ].pack('C') << tstr
       else
         str = [ BC_MAP_UNTYPED ].pack('C')
       end
-
       val.each do |k, v|
         str << self.write_object(k, refs, crefs, trefs)
         str << self.write_object(v, refs, crefs, trefs)
       end
-
       str << [ BC_END ].pack('C')
     end
 

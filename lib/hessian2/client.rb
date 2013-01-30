@@ -27,11 +27,12 @@ module Hessian2
       conn = Net::HTTP.new(@host, @port, *@proxy.values_at(:host, :port, :user, :password))
       conn.use_ssl = true and conn.verify_mode = OpenSSL::SSL::VERIFY_NONE if @scheme == 'https'
       conn.start do |http|
-        # body = http.request(req, Hessian2::Writer.call(method, args)).body
+        # call = Hessian2::Writer.call(method, args)
+        # body = http.request(req, call).body
         # t0 = Time.new
-        # data = Hessian2::Parser.parse(body)
+        # val = Hessian2::Parser.parse(body)
         # puts "#{Time.new - t0}s"
-        # data
+        # val
         Hessian2::Parser.parse(http.request(req, Hessian2::Writer.call(method, args)).body)
       end
     end
