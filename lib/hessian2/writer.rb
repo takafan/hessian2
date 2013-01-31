@@ -107,8 +107,10 @@ module Hessian2
             [ BC_LONG_BYTE_ZERO + (val >> 8), val ].pack('cc')
           when LONG_SHORT_MIN..LONG_SHORT_MAX # three octet longs
             [ BC_LONG_SHORT_ZERO + (val >> 16), (val >> 8), val ].pack('ccc')
-          else # four octet longs
+          when -0x80_000_000..0x7f_fff_fff # four octet longs
             [ BC_LONG_INT, val ].pack('Cl>')
+          else
+            [ BC_LONG, val ].pack('Cq>')
           end
         else
           self.write_int(val)
