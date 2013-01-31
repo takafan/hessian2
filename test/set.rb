@@ -83,6 +83,8 @@ c1.set_date_201301121459(Time.new(now.year, now.mon, now.day, now.hour, now.min)
 c1.set_long_mx80_000_001(-0x80_000_001)
 c1.set_long_x80_000_000(0x80_000_000)
 c1.set_long_mx8_000_000_000_000_000(-0x8_000_000_000_000_000)
+c1.set_long_mx8_000_000_000_000_000(Hessian2::TypeWrapper.new('L', -0x8_000_000_000_000_000))
+c1.set_long_mx8_000_000_000_000_000(Hessian2::TypeWrapper.new('L', '-0x8_000_000_000_000_000'))
 c1.set_long_x7_fff_fff_fff_fff_fff(0x7_fff_fff_fff_fff_fff)
 
 # 0x4d # map with type ('M')

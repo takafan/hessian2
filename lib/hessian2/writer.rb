@@ -99,22 +99,8 @@ module Hessian2
           [ BC_DOUBLE, val ].pack('CG') # double
         end
       when Fixnum
-        if type and %w[ L Long long ].include?(type)
-          case val
-          when LONG_DIRECT_MIN..LONG_DIRECT_MAX # single octet longs
-            [ BC_LONG_ZERO + val ].pack('c')
-          when LONG_BYTE_MIN..LONG_BYTE_MAX # two octet longs
-            [ BC_LONG_BYTE_ZERO + (val >> 8), val ].pack('cc')
-          when LONG_SHORT_MIN..LONG_SHORT_MAX # three octet longs
-            [ BC_LONG_SHORT_ZERO + (val >> 16), (val >> 8), val ].pack('ccc')
-          when -0x80_000_000..0x7f_fff_fff # four octet longs
-            [ BC_LONG_INT, val ].pack('Cl>')
-          else
-            [ BC_LONG, val ].pack('Cq>')
-          end
-        else
-          self.write_int(val)
-        end
+        return self.write_long(val) if type and %w[ L Long long ].include?(type)
+        self.write_int(val)
       when Array
         idx = refs[val.object_id]
         return self.write_ref(idx) if idx
@@ -145,6 +131,7 @@ module Hessian2
         end
         str
       when Bignum
+        return self.write_long(val) if type and %w[ L Long long ].include?(type)
         if (-0x80_000_000..0x7f_fff_fff).include?(val) # four octet longs
           [ BC_LONG_INT, val ].pack('Cl>')
         else # long
@@ -155,24 +142,27 @@ module Hessian2
       when NilClass
         [ BC_NULL ].pack('C')
       when String
-        if type and %w[ B b ].include?(type)
-          chunks, i, len = [], 0, val.size
-          while len > 0x8000
-            chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << val[i...(i += 0x8000)]
-            len -= 0x8000
+        if type 
+          if %w[ B b ].include?(type)
+            chunks, i, len = [], 0, val.size
+            while len > 0x8000
+              chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << val[i...(i += 0x8000)]
+              len -= 0x8000
+            end
+            final = val[i..-1]
+            if len <= BINARY_DIRECT_MAX
+              chunks << [ BC_BINARY_DIRECT + len ].pack('C') << final
+            elsif len <= BINARY_SHORT_MAX
+              chunks << [ BC_BINARY_SHORT + (len >> 8), len ].pack('CC') << final
+            else
+              chunks << [ BC_BINARY, len ].pack('Cn') << final
+            end
+            return chunks.join
+          elsif %w[ L Long long ].include?(type)
+            return self.write_long(Integer(val))
           end
-          final = val[i..-1]
-          if len <= BINARY_DIRECT_MAX
-            chunks << [ BC_BINARY_DIRECT + len ].pack('C') << final
-          elsif len <= BINARY_SHORT_MAX
-            chunks << [ BC_BINARY_SHORT + (len >> 8), len ].pack('CC') << final
-          else
-            chunks << [ BC_BINARY, len ].pack('Cn') << final
-          end
-          chunks.join
-        else
-          self.write_string(val)
         end
+        self.write_string(val)
       when Symbol
         self.write_string(val)
       else
@@ -236,6 +226,21 @@ module Hessian2
         [ BC_INT_SHORT_ZERO + (val >> 16), (val >> 8), val].pack('ccc')
       when -0x80_000_000..0x7f_fff_fff # integer
         [ BC_INT, val ].pack('Cl>')
+      else
+        [ BC_LONG, val ].pack('Cq>')
+      end
+    end
+
+    def self.write_long(val)
+      case val
+      when LONG_DIRECT_MIN..LONG_DIRECT_MAX # single octet longs
+        [ BC_LONG_ZERO + val ].pack('c')
+      when LONG_BYTE_MIN..LONG_BYTE_MAX # two octet longs
+        [ BC_LONG_BYTE_ZERO + (val >> 8), val ].pack('cc')
+      when LONG_SHORT_MIN..LONG_SHORT_MAX # three octet longs
+        [ BC_LONG_SHORT_ZERO + (val >> 16), (val >> 8), val ].pack('ccc')
+      when -0x80_000_000..0x7f_fff_fff # four octet longs
+        [ BC_LONG_INT, val ].pack('Cl>')
       else
         [ BC_LONG, val ].pack('Cq>')
       end
