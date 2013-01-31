@@ -1,6 +1,8 @@
 = hessian2
 
-send data, using json, or hessian2 here.
+send data, using json, or hessian here.
+
+hessian2 implements hessian 2.0 protocol. involve {web services protocol}[http://hessian.caucho.com/doc/hessian-ws.html] and {serialization protocol}[http://hessian.caucho.com/doc/hessian-serialization.html].
 
 == client
 
@@ -9,31 +11,63 @@ send data, using json, or hessian2 here.
   require 'hessian2'
 
   url = 'http://127.0.0.1:9292/monkey'
-
   client = Hessian2::Client.new(url)
   
-  # call remote function: get_monkey()
-  client.get_monkey
+  # call remote function: send_monkey(monkey)
+  client.send_monkey(monkey)
 
 == type wrapper
   
   # send a file as binary
   binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
 
-  client.send_lighthouse(Hessian2::TypeWrapper.new('B', binstr))
+  client.send_file(Hessian2::TypeWrapper.new('B', binstr))
 
 == class wrapper
   
-  # send a hash as Monkey
+  # send a hash as a monkey
   hash = {name: '阿门', age: 7}
+  client.send_monkey(Hessian2::ClassWrapper.new('Monkey', hash))
 
-  client.send_monkey(Hessian2::ClassWrapper.new('example.Monkey', hash))
+  # send a batch of monkeys
+  arr = [{name: '阿门', age: 7}, {name: '大鸡', age: 6}]
+  client.send_monkeys(arr.map{|hash| Hessian2::ClassWrapper.new('Monkey', hash)})
+
+the field names are only serialized once, efficient.
 
 == service
+
+  class MonkeyService
+    extend Hessian2::Handler
+
+    def send_monkey(monkey)
+    # ...
+  end
+  
+  # a example, with sinatra
+  post '/monkey' do
+    status 200
+    MonkeyService.handle(request.body.read)
+  end
+
+== test
+  
+  cd test/
+
+  # start a service
+  rackup
+
+  # test parser
+  ruby ./get.rb
+
+  # test writer
+  ruby ./set.rb
 
 == todo
 
 supports packet+ and envelope+
+benchmark
+rsa aes encryption
 
 == authors
 

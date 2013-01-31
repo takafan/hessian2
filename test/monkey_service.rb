@@ -35,7 +35,7 @@ class MonkeyService
   end
 
   def self.set_string_x1fu(str1)
-    print_assert 'set_string_x1f', str1 == '金' * 0x1f
+    print_assert 'set_string_x1fu', str1 == '金' * 0x1f
   end
   
   # 0x20..0x2f # binary data length 0-15
@@ -48,9 +48,11 @@ class MonkeyService
   end
   
   def self.set_bin_0(bin1)
+    print_assert 'set_bin_0', bin1.size == 0
   end
 
   def self.set_bin_xf(bin1)
+    print_assert 'set_bin_xf', bin1.size == 0xf
   end
   
   # 0x30..0x33 # utf-8 string length 0-1023
@@ -71,6 +73,7 @@ class MonkeyService
   end
   
   def self.set_string_x20(str1)
+    print_assert 'set_string_x20', str1[0] == 'j' && str1.size == 0x20
   end
   
   def self.set_string_x20u(str1)

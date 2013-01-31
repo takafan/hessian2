@@ -245,17 +245,11 @@ module Hessian2
     end
 
     def self.read_binary_direct(bc)
-      len = bc - BC_BINARY_DIRECT
-      Array.new(len).tap do |chars|
-        len.times{|i| chars[i] = self.parse_utf8_char }
-      end.pack('U*')
+      self.read_binary_string(bc - BC_BINARY_DIRECT)
     end
 
     def self.read_binary_short(bc)
-      len = ((bc - BC_BINARY_SHORT) << 8) + self.read
-      Array.new(len).tap do |chars|
-        len.times{|i| chars[i] = self.parse_utf8_char }
-      end.pack('U*')
+      self.read_binary_string(((bc - BC_BINARY_SHORT) << 8) + self.read)
     end
 
     def self.read_binary_chunk
@@ -270,10 +264,13 @@ module Hessian2
     end
 
     def self.read_binary
-      len = (self.read << 8) + self.read
-      Array.new(len).tap do |chars|
-        len.times{|i| chars[i] = self.parse_utf8_char }
-      end.pack('U*')
+      self.read_binary_string((self.read << 8) + self.read)
+    end
+
+    def self.read_binary_string(len)
+      chars = @data[@i + 1, len]
+      @i += len
+      chars.pack('C*')
     end
 
     def self.read_date
@@ -361,17 +358,11 @@ module Hessian2
     end
 
     def self.read_string_direct(bc)
-      len = bc - BC_STRING_DIRECT
-      Array.new(len).tap do |chars|
-        len.times{|i| chars[i] = self.parse_utf8_char }
-      end.pack('U*')
+      self.read_utf8_string(bc - BC_STRING_DIRECT)
     end
 
     def self.read_string_short(bc)
-      len = ((bc - BC_STRING_SHORT) << 8) + self.read
-      Array.new(len).tap do |chars|
-        len.times{|i| chars[i] = self.parse_utf8_char }
-      end.pack('U*')
+      self.read_utf8_string(((bc - BC_STRING_SHORT) << 8) + self.read)
     end
 
     def self.read_string_chunk
@@ -386,7 +377,10 @@ module Hessian2
     end
 
     def self.read_string
-      len = (self.read << 8) + self.read
+      self.read_utf8_string((self.read << 8) + self.read)
+    end
+
+    def self.read_utf8_string(len)
       Array.new(len).tap do |chars|
         len.times{|i| chars[i] = self.parse_utf8_char }
       end.pack('U*')
