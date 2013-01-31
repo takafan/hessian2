@@ -13,7 +13,7 @@ module Hessian2
       when 0x43 # rpc call ('C')
         method = self.parse_string
         args = [].tap do |arr|
-          self.parse_int.times{ arr << self.parse_string }
+          self.parse_int.times{ arr << self.parse_data }
         end
         [ method, *args ]
       when 0x46 # fault ('F')

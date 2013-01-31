@@ -4,14 +4,8 @@ $:.unshift(lib_path)
 require 'hessian2'
 require File.expand_path('../monkey',  __FILE__)
 
-# TODO 
-
 class MonkeyService
   extend Hessian2::Handler
-
-  def print_assert(method, t)
-    puts "#{t ? '.' : 'fail'} #{method}"
-  end
 
   # 0x00..0x1f # utf-8 string length 0-31
   def self.get_string_0
@@ -77,12 +71,15 @@ class MonkeyService
   end
   
   def self.set_string_x20u(str1)
+    print_assert 'set_string_x20u', str1[0] == '金' && str1.size == 0x20
   end
   
   def self.set_string_x3ff(str1)
+    print_assert 'set_string_x3ff', str1[0] == 'j' && str1.size == 0x3ff
   end
   
   def self.set_string_x3ffu(str1)
+    print_assert 'set_string_x3ffu', str1[0] == '金' && str1.size == 0x3ff
   end
   
   # 0x34..0x37 # binary data length 0-1023
@@ -95,9 +92,11 @@ class MonkeyService
   end
   
   def self.set_bin_x10(bin1)
+    print_assert 'set_bin_x10', bin1.size == 0x10
   end
   
   def self.set_bin_x3ff(bin1)
+    print_assert 'set_bin_x3ff', bin1.size == 0x3ff
   end
   
   # 0x38..0x3f # three-octet compact long (-x40000 to x3ffff)
@@ -118,15 +117,19 @@ class MonkeyService
   end
   
   def self.set_long_mx801(long1)
+    print_assert 'set_long_mx801', long1 == -0x801
   end
   
   def self.set_long_x800(long1)
+    print_assert 'set_long_x800', long1 == 0x800
   end
   
   def self.set_long_mx40000(long1)
+    print_assert 'set_long_mx40000', long1 == -0x40000
   end
   
   def self.set_long_x3ffff(long1)
+    print_assert 'set_long_x3ffff', long1 == 0x3ffff
   end
   
   # 0x41 # 8-bit binary data non-final chunk ('A')
@@ -147,9 +150,11 @@ class MonkeyService
   end
   
   def self.set_bin_x400(bin1)
+    print_assert 'set_bin_x400', bin1.size == 0x400
   end
   
   def self.set_bin_x8000(bin1)
+    print_assert 'set_bin_x8000', bin1.size == 0x8000
   end
   
   # 0x43 # object type definition ('C') and 0x60..0x6f # object with direct type
@@ -159,6 +164,7 @@ class MonkeyService
   end
   
   def self.set_monkey(monkey1)
+    print_assert 'set_monkey', monkey1['name'] == '阿门' && monkey1['age'] == 7
   end
   
   # 0x44 # 64-bit IEEE encoded double ('D')
@@ -187,21 +193,27 @@ class MonkeyService
   end
   
   def self.set_double_min(double1) # 4.9E-324
+    print_assert 'set_double_min', double1 == 4.9E-324
   end
 
   def self.set_double_max(double1) # 1.7976931348623157E308
+    print_assert 'set_double_max', double1 == 1.7976931348623157E308
   end
 
   def self.set_double_positive_infinity(double1)
+    print_assert 'set_double_positive_infinity', double1 == Float::INFINITY
   end
   
   def self.set_double_negative_infinity(double1)
+    print_assert 'set_double_negative_infinity', double1 == -Float::INFINITY
   end
   
   def self.set_double_nan(double1)
+    print_assert 'set_double_nan', double1.to_s.upcase == 'NAN'
   end
   
   def self.set_123dot456(double1)
+    print_assert 'set_123dot456', double1 == 123.456
   end
   
   
@@ -211,6 +223,7 @@ class MonkeyService
   end
   
   def self.set_false(false1)
+    print_assert 'set_false', !false1
   end
   
   # 0x48 # untyped map ('H')
@@ -219,6 +232,7 @@ class MonkeyService
   end
   
   def self.set_map_h(map1)
+    print_assert 'set_map_h', map1['name'] == '阿门' && map1['age'] == 7
   end
   
   # 0x49 # 32-bit signed integer ('I')
@@ -239,15 +253,19 @@ class MonkeyService
   end
   
   def self.set_int_mx40001(int1)
+    print_assert 'set_int_mx40001', int1 == -0x40001
   end
   
   def self.set_int_x40000(int1)
+    print_assert 'set_int_x40000', int1 == 0x40000
   end
   
   def self.set_int_mx40_000_000(int1)
+    print_assert 'set_int_mx40_000_000', int1 == -0x40_000_000
   end
   
   def self.set_int_x3f_fff_fff(int1)
+    print_assert 'set_int_x3f_fff_fff', int1 == 0x3f_fff_fff
   end
   
   # 0x4a # 64-bit UTC millisecond date
@@ -256,6 +274,7 @@ class MonkeyService
   end
   
   def self.set_date_20130112145959(date1)
+    print_assert 'set_date_20130112145959', date1 == Time.new(2013, 1, 12, 14, 59, 59)
   end
   
   # 0x4b # 32-bit UTC minute date
@@ -264,6 +283,7 @@ class MonkeyService
   end
   
   def self.set_date_201301121459(date1)
+    print_assert 'set_date_201301121459', date1 == Time.new(2013, 1, 12, 14, 59, 0)
   end
   
   # 0x4c # 64-bit signed long integer ('L')
@@ -284,15 +304,19 @@ class MonkeyService
   end
   
   def self.set_long_mx80_000_001(long1)
+    print_assert 'set_long_mx80_000_001', long1 == -0x80_000_001
   end
   
   def self.set_long_x80_000_000(long1)
+    print_assert 'set_long_x80_000_000', long1 == 0x80_000_000
   end
   
   def self.set_long_mx8_000_000_000_000_000(long1)
+    print_assert 'set_long_mx8_000_000_000_000_000', long1 == -0x8_000_000_000_000_000
   end
   
   def self.set_long_x7_fff_fff_fff_fff_fff(long1)
+    print_assert 'set_long_x7_fff_fff_fff_fff_fff', long1 == 0x7_fff_fff_fff_fff_fff
   end
   
   # 0x4d # map with type ('M')
@@ -301,6 +325,7 @@ class MonkeyService
   end
 
   def self.set_map(map1)
+    print_assert 'set_map', map1['name'] == '阿门' && map1['age'] == 7
   end
   
   # 0x4e # null ('N')
@@ -309,6 +334,7 @@ class MonkeyService
   end
   
   def self.set_null(obj)
+    print_assert 'set_null', obj.nil?
   end
   
   # 0x4f # object instance ('O')
@@ -317,6 +343,7 @@ class MonkeyService
   end
   
   def self.set_monkeys(monkeys)
+    print_assert 'set_monkeys', monkeys.size == 0x11
   end
   
   # 0x51 # reference to map/list/object - integer ('Q')
@@ -350,7 +377,7 @@ class MonkeyService
   end
   
   def self.set_map_list_monkey_map_list_monkey(map1, list1, monkey1, map2, list2, monkey2)
-
+    print_assert 'set_map_list_monkey_map_list_monkey', map1['name'] == map2['name'] && list1[0] == list2[0] && monkey1['name'] == monkey2['name']
   end
   
   # 0x52 # utf-8 string non-final chunk ('R')
@@ -363,9 +390,11 @@ class MonkeyService
   end
   
   def self.set_string_x8001(str1)
+    print_assert 'set_string_x8001', str1[0] == 'j' && str1.size == 0x8001
   end
   
   def self.set_string_x8001u(str1)
+    print_assert 'set_string_x8001u', str1[0] == '金' && str1.size == 0x8001
   end
   
   # 0x53 # utf-8 string final chunk ('S')
@@ -386,15 +415,19 @@ class MonkeyService
   end
   
   def self.set_string_x400(str1)
+    print_assert 'set_string_x400', str1[0] == 'j' && str1.size == 0x400
   end
   
   def self.set_string_x400u(str1)
+    print_assert 'set_string_x400u', str1[0] == '金' && str1.size == 0x400
   end
   
   def self.set_string_x8000(str1)
+    print_assert 'set_string_x8000', str1[0] == 'j' && str1.size == 0x8000
   end
   
   def self.set_string_x8000u(str1)
+    print_assert 'set_string_x8000u', str1[0] == '金' && str1.size == 0x8000
   end
   
   # 0x54 # boolean true ('T')
@@ -403,6 +436,7 @@ class MonkeyService
   end
   
   def self.set_true(true1)
+    print_assert 'set_true', true1
   end
   
   # 0x56 # fixed-length list/vector ('V')
@@ -416,6 +450,7 @@ class MonkeyService
   end
   
   def self.set_list(list1)
+    print_assert 'set_list', list1.size == 14 && list1[0] == 1
   end
   
   # 0x59 # long encoded as 32-bit int ('Y')
@@ -436,15 +471,19 @@ class MonkeyService
   end
   
   def self.set_long_mx40001(long1)
+    print_assert 'set_long_mx40001', long1 == -0x40001
   end
   
   def self.set_long_x40000(long1)
+    print_assert 'set_long_x40000', long1 == 0x40000
   end
   
   def self.set_long_mx80_000_000(long1)
+    print_assert 'set_long_mx80_000_000', long1 == -0x80_000_000
   end
   
   def self.set_long_x7f_fff_fff(long1)
+    print_assert 'set_long_x7f_fff_fff', long1 == 0x7f_fff_fff
   end
   
   # 0x5b # double 0.0
@@ -453,6 +492,7 @@ class MonkeyService
   end
   
   def self.set_double_0(double1)
+    print_assert 'set_double_0', double1 == 0.0
   end
   
   # 0x5c # double 1.0
@@ -461,6 +501,7 @@ class MonkeyService
   end
   
   def self.set_double_1(double1)
+    print_assert 'set_double_1', double1 == 1.0
   end
   
   # 0x5d # double represented as byte (-128.0 to 127.0)
@@ -472,12 +513,12 @@ class MonkeyService
     127.0
   end
   
-  def self.set_double_m128
-    -128.0
+  def self.set_double_m128(double1)
+    print_assert 'set_double_m128', double1 == -128.0
   end
 
-  def self.set_double_127
-    127.0
+  def self.set_double_127(double1)
+    print_assert 'set_double_127', double1 == 127.0
   end
   
   # 0x5e # double represented as short (-32768.0 to 32767.0)
@@ -498,15 +539,19 @@ class MonkeyService
   end
   
   def self.set_double_m129(double1)
+    print_assert 'set_double_m129', double1 == -129.0
   end
   
   def self.set_double_128(double1)
+    print_assert 'set_double_128', double1 == 128.0
   end
   
   def self.set_double_m32768(double1)
+    print_assert 'set_double_m32768', double1 == -32768.0
   end
   
   def self.set_double_32767(double1)
+    print_assert 'set_double_32767', double1 == 32767.0
   end
   
   # 0x70..0x77 # fixed list with direct length 
@@ -528,9 +573,11 @@ class MonkeyService
   end
   
   def self.set_list_size0(list1)
+    print_assert 'set_list_size0', list1.size == 0
   end
   
   def self.set_list_size7(list1)
+    print_assert 'set_list_size7', list1.size == 7 && list1[0] == 1
   end
   
   # 0x80..0xbf # one-octet compact int (-x10 to x2f, x90 is 0)
@@ -543,9 +590,11 @@ class MonkeyService
   end
   
   def self.set_int_mx10(int1)
+    print_assert 'set_int_mx10', int1 == -0x10
   end
 
   def self.set_int_x3f(int1)
+    print_assert 'set_int_x3f', int1 == 0x3f
   end
   
   # 0xc0..0xcf # two-octet compact int (-x800 to x7ff)
@@ -566,15 +615,19 @@ class MonkeyService
   end
   
   def self.set_int_mx11(int1)
+    print_assert 'set_int_mx11', int1 == -0x11
   end
 
   def self.set_int_x40(int1)
+    print_assert 'set_int_x40', int1 == 0x40
   end
 
   def self.set_int_mx800(int1)
+    print_assert 'set_int_mx800', int1 == -0x800
   end
 
   def self.set_int_x7ff(int1)
+    print_assert 'set_int_x7ff', int1 == 0x7ff
   end
   
   # 0xd0..0xd7 # three-octet compact int (-x40000 to x3ffff)
@@ -595,15 +648,19 @@ class MonkeyService
   end
   
   def self.set_int_mx801(int1)
+    print_assert 'set_int_mx801', int1 == -0x801
   end
 
   def self.set_int_x800(int1)
+    print_assert 'set_int_x800', int1 == 0x800
   end
 
   def self.set_int_mx40000(int1)
+    print_assert 'set_int_mx40000', int1 == -0x40000
   end
 
   def self.set_int_x3ffff(int1)
+    print_assert 'set_int_x3ffff', int1 == 0x3ffff
   end
   
   # 0xd8..0xef # one-octet compact long (-x8 to xf, xe0 is 0)
@@ -616,9 +673,11 @@ class MonkeyService
   end
   
   def self.set_long_mx8(long1)
+    print_assert 'set_long_mx8', long1 == -0x8
   end
 
   def self.set_long_xf(long1)
+    print_assert 'set_long_xf', long1 == 0xf
   end
   
   # 0xf0..0xff # two-octet compact long (-x800 to x7ff, xf8 is 0)
@@ -639,15 +698,24 @@ class MonkeyService
   end
   
   def self.set_long_mx9(long1)
+    print_assert 'set_long_mx9', long1 == -0x9
   end
 
   def self.set_long_x10(long1)
+    print_assert 'set_long_x10', long1 == 0x10
   end
 
   def self.set_long_mx800(long1)
+    print_assert 'set_long_mx800', long1 == -0x800
   end
 
   def self.set_long_x7ff(long1)
+    print_assert 'set_long_x7ff', long1 == 0x7ff
+  end
+
+  private
+  def self.print_assert(method, t)
+    puts "#{t ? '.' : '*' * 10 << 'fail'} #{method}"
   end
 
 end

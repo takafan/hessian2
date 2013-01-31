@@ -7,13 +7,9 @@ require File.expand_path('../monkey',  __FILE__)
 c1 = Hessian2::Client.new('http://127.0.0.1:9292/monkey')
 list1 = (1..7).to_a
 map1 = { name: '阿门', age: 7 }
-map2 = { name: '大鸡', age: 6 }
 monkey1 = Monkey.new(map1)
-monkey2 = Monkey.new(map2)
 tmonkey1 = Hessian2::TypeWrapper.new('example.Monkey', map1)
-tmonkey2 = Hessian2::TypeWrapper.new('example.Monkey', map2)
 cmonkey1 = Hessian2::ClassWrapper.new('example.Monkey', map1)
-cmonkey2 = Hessian2::ClassWrapper.new('example.Monkey', map2)
 monkeys = []
 0x11.times do |i|
   monkeys << Hessian2::ClassWrapper.new("example.Monkey#{i}", map1)
@@ -54,7 +50,6 @@ c1.set_bin_x8000(Hessian2::TypeWrapper.new('B', ['j' * 0x8000].pack('a*')))
 
 # 0x43 # object type definition ('C')
 # 0x60..0x6f # object with direct type
-c1.set_monkey(cmonkey1)
 c1.set_monkey(monkey1)
 
 # 0x44 # 64-bit IEEE encoded double ('D')
