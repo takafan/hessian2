@@ -2,7 +2,7 @@
 
 send data, using json, or hessian here.
 
-hessian2 implements hessian 2.0 protocol. involve {web services protocol}[http://hessian.caucho.com/doc/hessian-ws.html] and {serialization protocol}[http://hessian.caucho.com/doc/hessian-serialization.html].
+hessian2 2.0 implements hessian 2.0 protocol. involve {web services protocol}[http://hessian.caucho.com/doc/hessian-ws.html] and {serialization protocol}[http://hessian.caucho.com/doc/hessian-serialization.html].
 
 == client
 
