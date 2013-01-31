@@ -234,8 +234,10 @@ module Hessian2
         [ BC_INT_BYTE_ZERO + (val >> 8), val ].pack('cc')
       when INT_SHORT_MIN..INT_SHORT_MAX # three octet integers
         [ BC_INT_SHORT_ZERO + (val >> 16), (val >> 8), val].pack('ccc')
-      else  # integer
+      when -0x80_000_000..0x7f_fff_fff # integer
         [ BC_INT, val ].pack('Cl>')
+      else
+        [ BC_LONG, val ].pack('Cq>')
       end
     end
 
