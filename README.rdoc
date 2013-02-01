@@ -18,10 +18,13 @@ hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://h
 
 == type wrapper
   
-  # send a file as binary
   binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
 
+  # send a file as binary
   client.send_file(Hessian2::TypeWrapper.new('B', binstr))
+  
+  # send a string as long
+  c1.send_long(Hessian2::TypeWrapper.new('L', '-0x8_000_000_000_000_000'))
 
 == class wrapper
   
@@ -46,7 +49,6 @@ the field names are only serialized once, efficient.
   
   # a example, with sinatra
   post '/monkey' do
-    status 200
     MonkeyService.handle(request.body.read)
   end
 
@@ -62,6 +64,9 @@ the field names are only serialized once, efficient.
 
   # test writer
   ruby ./set.rb
+
+  # profiling
+  ruby-prof ./get_string_x8000u.bm.rb 50 > report.txt
 
 == todo
 
