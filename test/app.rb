@@ -3,6 +3,8 @@ $:.unshift(lib_path)
 require 'sinatra'
 require File.expand_path('../monkey_service',  __FILE__)
 
+set :logging, false
+
 get '/' do
   status 405
   'post me'

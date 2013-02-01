@@ -40,7 +40,7 @@ the field names are only serialized once, efficient.
   class MonkeyService
     extend Hessian2::Handler
 
-    def send_monkey(monkey)
+    def self.send_monkey(monkey)
     # ...
   end
   
@@ -55,7 +55,7 @@ the field names are only serialized once, efficient.
   cd test/
 
   # start a service
-  rackup
+  rackup -E production
 
   # test parser
   ruby ./get.rb

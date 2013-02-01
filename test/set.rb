@@ -68,10 +68,10 @@ c1.set_map_h(map1)
 
 # 0x49 # 32-bit signed integer ('I')
 c1.set_int_mx40001(-0x40001)
+c1.set_int_mx40001(Hessian2::TypeWrapper.new('L', -0x40001))
 c1.set_int_x40000(0x40000)
 c1.set_int_mx40_000_000(-0x40_000_000)
 c1.set_int_x3f_fff_fff(0x3f_fff_fff)
-
 
 # 0x4a # 64-bit UTC millisecond date
 c1.set_date_20130112145959(now)
@@ -83,6 +83,8 @@ c1.set_date_201301121459(Time.new(now.year, now.mon, now.day, now.hour, now.min)
 c1.set_long_mx80_000_001(-0x80_000_001)
 c1.set_long_x80_000_000(0x80_000_000)
 c1.set_long_mx8_000_000_000_000_000(-0x8_000_000_000_000_000)
+c1.set_long_mx8_000_000_000_000_000(Hessian2::TypeWrapper.new('I', -0x8_000_000_000_000_000))
+c1.set_long_mx8_000_000_000_000_000(Hessian2::TypeWrapper.new('I', '-0x8_000_000_000_000_000'))
 c1.set_long_mx8_000_000_000_000_000(Hessian2::TypeWrapper.new('L', -0x8_000_000_000_000_000))
 c1.set_long_mx8_000_000_000_000_000(Hessian2::TypeWrapper.new('L', '-0x8_000_000_000_000_000'))
 c1.set_long_x7_fff_fff_fff_fff_fff(0x7_fff_fff_fff_fff_fff)

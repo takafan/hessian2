@@ -27,6 +27,8 @@ module Hessian2
       end
     end
 
+    private
+
     def self.parse_data
       bc = self.read
       case bc
@@ -178,7 +180,6 @@ module Hessian2
       end
     end
 
-    private
     def self.parse_utf8_char
       bc = self.read
       if bc < 0x80 # 0xxxxxxx

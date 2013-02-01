@@ -6,7 +6,7 @@ require File.expand_path('../monkey',  __FILE__)
 
 class MonkeyService
   extend Hessian2::Handler
-
+  
   # 0x00..0x1f # utf-8 string length 0-31
   def self.get_string_0
     ''
@@ -138,6 +138,7 @@ class MonkeyService
   end
   
   def self.set_lighthouse(bin1) # 561276
+    print_assert 'set_lighthouse', bin1.size == IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__)).size
   end
   
   # 0x42 # 8-bit binary data final chunk ('B')

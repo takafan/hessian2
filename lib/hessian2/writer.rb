@@ -131,7 +131,13 @@ module Hessian2
         end
         str
       when Bignum
-        return self.write_long(val) if type and %w[ L Long long ].include?(type)
+        if type
+          if %w[ I Integer int ].include?(type)
+            return self.write_int(val)
+          elsif %w[ L Long long ].include?(type)
+            return self.write_long(val)
+          end
+        end
         if (-0x80_000_000..0x7f_fff_fff).include?(val) # four octet longs
           [ BC_LONG_INT, val ].pack('Cl>')
         else # long
@@ -158,6 +164,8 @@ module Hessian2
               chunks << [ BC_BINARY, len ].pack('Cn') << final
             end
             return chunks.join
+          elsif %w[ I Integer int ].include?(type)
+            return self.write_int(Integer(val))
           elsif %w[ L Long long ].include?(type)
             return self.write_long(Integer(val))
           end
