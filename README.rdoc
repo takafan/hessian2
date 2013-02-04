@@ -6,8 +6,6 @@ hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://h
 
 == client
 
-  gem install hessian2
-
   require 'hessian2'
 
   url = 'http://127.0.0.1:9292/monkey'
@@ -15,6 +13,10 @@ hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://h
   
   # call remote function: send_monkey(monkey)
   client.send_monkey(monkey)
+
+== install
+
+  gem install hessian2
 
 == type wrapper
   
@@ -64,9 +66,6 @@ the field names are only serialized once, efficient.
 
   # test writer
   ruby ./set.rb
-
-  # profiling
-  ruby-prof ./get_string_x8000u.bm.rb 50 > report.txt
 
 == todo
 

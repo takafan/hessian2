@@ -4,13 +4,9 @@ $:.unshift(lib_path)
 require 'hessian2'
 require File.expand_path('../monkey',  __FILE__)
 
-count = ARGV[0] ? ARGV[0].to_i : 100_000
-
-monkeys = [].tap do |arr|
-  count.times{|i| arr << Monkey.new(name: "阿门#{i}", age: 7) }
-end
+c1 = Hessian2::Client.new('http://127.0.0.1:9292/monkey')
 
 t0 = Time.new
-data = Hessian2::Writer.write_object(monkeys)
+data = c1.get_a_batch_of_monkeys(1000)
 puts "#{Time.new - t0}s"
 puts data.size
