@@ -1,11 +1,10 @@
 # -*- encoding: utf-8 -*-
-require 'yajl'
+require 'msgpack'
 require File.expand_path('../monkey',  __FILE__)
 
-monkeys = Monkey.generate_hash
-
+data = IO.binread('monkeys.msgpack.bin')
 t0 = Time.new
-data = Yajl::Encoder.encode(monkeys)
+monkey = MessagePack.unpack(data).first
 puts "#{Time.new - t0}s"
 puts "size: #{data.size}"
-IO.binwrite('monkeys.json.bin', data)
+puts monkey.inspect

@@ -2,12 +2,21 @@
 
 json encode fast, hessian write small.
 
+
 hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://hessian.caucho.com/doc/hessian-ws.html] and {serialization protocol}[http://hessian.caucho.com/doc/hessian-serialization.html].
+
+== comparing
+
+  yajl-ruby: json is readable and popular.
+  
+  msgpack: pack/unpack fast.
+  
+  hessian2: referencable, serialize following objects only values, therefore smallest, and saving transfer.
 
 == client
 
   require 'hessian2'
-
+  
   url = 'http://127.0.0.1:9292/monkey'
   client = Hessian2::Client.new(url)
   
@@ -37,8 +46,6 @@ hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://h
   # send a batch of monkeys
   arr = [{name: '阿门', age: 7}, {name: '大鸡', age: 6}]
   client.send_monkeys(arr.map{|hash| Hessian2::ClassWrapper.new('Monkey', hash)})
-
-the field names are only serialized once, efficient.
 
 == service
 
@@ -70,8 +77,6 @@ the field names are only serialized once, efficient.
 == todo
 
 supports packet+ and envelope+
-
-benchmark
 
 rsa aes encryption
 

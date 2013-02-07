@@ -16,23 +16,29 @@ module Hessian2
       when 0x43 # rpc call ('C')
         method = self.parse_string(bytes)
         args = [].tap do |arr|
-          self.parse_int(bytes).times{ arr << self.parse(bytes) }
+          self.parse_int(bytes).times{ arr << self.parse_bytes(bytes) }
         end
         [ method, *args ]
       when 0x46 # fault ('F')
-        fault = self.parse(bytes)
+        fault = self.parse_bytes(bytes)
         code, message = fault['code'], fault['message']
         puts code
         puts message
         raise Fault.new, code == 'RuntimeError' ? message : "#{code} - #{message}"
       when 0x52 # rpc result ('R')
-        self.parse(bytes)
+        self.parse_bytes(bytes)
       else
         raise Fault.new, "'#{bc}' not implemented"
       end
     end
 
-    def self.parse(bytes, refs = [], cdefs = [])
+    def self.parse(data)
+      self.parse_bytes(data.bytes, refs = [], cdefs = [])
+    end
+
+    private
+
+    def self.parse_bytes(bytes, refs = [], cdefs = [])
       bc = bytes.next
       case bc
       when 0x00..0x1f # utf-8 string length 0-31
@@ -54,7 +60,7 @@ module Hessian2
         attrs = []
         cdefs << attrs
         parse_int(bytes).times{ attrs << self.parse_string(bytes) } # store a class reference
-        self.parse(bytes, refs, cdefs)
+        self.parse_bytes(bytes, refs, cdefs)
       when 0x44 # 64-bit IEEE encoded double ('D')
         self.read_double(bytes)
       when 0x46 # boolean false ('F')
@@ -63,7 +69,7 @@ module Hessian2
         val = {}
         refs << val # store a value reference first
         while bytes.peek != BC_END
-          val[self.parse(bytes, refs, cdefs)] = self.parse(bytes, refs, cdefs)
+          val[self.parse_bytes(bytes, refs, cdefs)] = self.parse_bytes(bytes, refs, cdefs)
         end
         bytes.next
         val
@@ -80,7 +86,7 @@ module Hessian2
         val = {}
         refs << val # store a value reference first
         while bytes.peek != BC_END
-          val[self.parse(bytes, refs, cdefs)] = self.parse(bytes, refs, cdefs)
+          val[self.parse_bytes(bytes, refs, cdefs)] = self.parse_bytes(bytes, refs, cdefs)
         end
         bytes.next
         val
@@ -90,7 +96,7 @@ module Hessian2
         val = {}
         refs << val
         cdefs[self.parse_int(bytes)].each do |f| 
-          val[f] = self.parse(bytes, refs, cdefs)
+          val[f] = self.parse_bytes(bytes, refs, cdefs)
         end
         val
       when 0x51 # reference to map/list/object - integer ('Q')
@@ -106,7 +112,7 @@ module Hessian2
         val = []
         refs << val # store a value reference first
         while bytes.next != BC_END
-          val << self.parse(bytes, refs, cdefs)
+          val << self.parse_bytes(bytes, refs, cdefs)
         end
         bytes.next
         val
@@ -114,14 +120,14 @@ module Hessian2
         self.parse_string(bytes) # skip type
         refs << val # store a value reference
         self.parse_int(bytes).times do |i| 
-          val[i] = self.parse(bytes, refs, cdefs)
+          val[i] = self.parse_bytes(bytes, refs, cdefs)
         end
         val
       when 0x57 # variable-length untyped list/vector ('W')
         val = []
         refs << val # store a value reference first
         while bytes.peek != BC_END
-          val << self.parse(bytes, refs, cdefs)
+          val << self.parse_bytes(bytes, refs, cdefs)
         end
         bytes.next
         val
@@ -129,7 +135,7 @@ module Hessian2
         val = []
         refs << val # store a value reference first
         self.parse_int(bytes).times do |i| 
-          val << self.parse(bytes, refs, cdefs)
+          val << self.parse_bytes(bytes, refs, cdefs)
         end
         val
       when 0x59 # long encoded as 32-bit int ('Y')
@@ -148,7 +154,7 @@ module Hessian2
         val = {}
         refs << val # store a value reference first
         cdefs[bc - BC_OBJECT_DIRECT].each do |f| 
-          val[f] = self.parse(bytes, refs, cdefs)
+          val[f] = self.parse_bytes(bytes, refs, cdefs)
         end
         val
       when 0x70..0x77 # fixed list with direct length
@@ -156,14 +162,14 @@ module Hessian2
         val = []
         refs << val # store a value reference first
         (bc - BC_LIST_DIRECT).times do
-          val << self.parse(bytes, refs, cdefs)
+          val << self.parse_bytes(bytes, refs, cdefs)
         end
         val
       when 0x78..0x7f # fixed untyped list with direct length
         val = []
         refs << val # store a value reference first
         (bc - BC_LIST_DIRECT_UNTYPED).times do
-          val << self.parse(bytes, refs, cdefs)
+          val << self.parse_bytes(bytes, refs, cdefs)
         end
         val
       when 0x80..0xbf # one-octet compact int (-x10 to x2f, x90 is 0)
