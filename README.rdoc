@@ -6,11 +6,11 @@ hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://h
 
 == comparing
 
-  yajl-ruby: json is readable and popular.
-  
-  msgpack: pack/unpack fast.
-  
-  hessian2: referencable, serialize following objects only values, therefore smallest, and saving transfer.
+yajl-ruby: json is readable and popular.
+
+msgpack: pack/unpack fast.
+
+hessian2: referencable, serialize following objects only values, therefore smallest, and saving transfer.
 
 == client
 
