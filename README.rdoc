@@ -2,7 +2,6 @@
 
 json encode fast, hessian write small.
 
-
 hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://hessian.caucho.com/doc/hessian-ws.html] and {serialization protocol}[http://hessian.caucho.com/doc/hessian-serialization.html].
 
 == comparing
