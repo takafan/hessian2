@@ -5,7 +5,7 @@ module Hessian2
   module Handler
 
     def handle(data)
-      Hessian2::Writer.reply(self.send(*Hessian2::Parser.parse(data)))
+      Hessian2::Writer.reply(self.send(*Hessian2::Parser.parse_rpc(data)))
     end
 
   end
