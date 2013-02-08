@@ -18,4 +18,4 @@ begin c1.undefined_method; rescue Hessian2::Fault => e; puts e.message; end
 
 begin c1.set_string_0('', 'undefined argument'); rescue Hessian2::Fault => e; puts e.message; end
 
-Hessian2::Parser.parse_bytes([0x5a].each)
+Hessian2.parse_bytes([0x5a].each)

@@ -1,8 +1,7 @@
 require 'uri'
 require 'net/http'
 require 'net/https'
-require 'hessian2/parser'
-require 'hessian2/writer'
+require 'hessian2'
 
 module Hessian2
   class Client
@@ -27,7 +26,7 @@ module Hessian2
       conn = Net::HTTP.new(@host, @port, *@proxy.values_at(:host, :port, :user, :password))
       conn.use_ssl = true and conn.verify_mode = OpenSSL::SSL::VERIFY_NONE if @scheme == 'https'
       conn.start do |http|
-        Hessian2::Parser.parse_rpc(http.request(req, Hessian2::Writer.call(method, args)).body)
+        Hessian2.parse_rpc(http.request(req, Hessian2.call(method, args)).body)
       end
     end
 

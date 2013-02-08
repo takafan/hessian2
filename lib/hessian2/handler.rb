@@ -1,11 +1,10 @@
-require 'hessian2/parser'
-require 'hessian2/writer'
+require 'hessian2'
 
 module Hessian2
   module Handler
 
     def handle(data)
-      Hessian2::Writer.reply(self.send(*Hessian2::Parser.parse_rpc(data)))
+      Hessian2.reply(self.send(*Hessian2.parse_rpc(data)))
     end
 
   end

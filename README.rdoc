@@ -4,27 +4,39 @@ json encode fast, hessian write small.
 
 hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://hessian.caucho.com/doc/hessian-ws.html] and {serialization protocol}[http://hessian.caucho.com/doc/hessian-serialization.html].
 
+install:
+
+  gem install hessian2
+
 == comparing
 
-yajl-ruby: json is readable and popular.
+sending 10_000 monkeys:
 
-msgpack: pack/unpack fastest.
+yajl-ruby: encode/parse fast, json is readable and popular.
 
-hessian2: any object, referencable, serialize field names once and following objects only values, therefore smallest, saving transfer.
+msgpack: pack/unpack most efficiency.
+
+marshal: sending object, dump fast, 1/3 smaller than yajl, load fastest, but it's ruby only.
+
+hessian2: sending object, referencable, serialize field names once then following objects only values, therefore 1/8 smaller than yajl —— saving transfer. write/parse a little slow because it's not c yet.
+
+== serializing
+
+  require 'hessian2'
+  data = Hessian2.write(obj)
+
+== deserializing 
+
+  require 'hessian2'
+  obj = Hessian2.parse(data)
 
 == client
 
-  require 'hessian2'
-  
   url = 'http://127.0.0.1:9292/monkey'
   client = Hessian2::Client.new(url)
   
   # call remote function, send a monkey
   client.send_monkey(monkey)
-
-== install
-
-  gem install hessian2
 
 == type wrapper
   

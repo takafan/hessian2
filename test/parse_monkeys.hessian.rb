@@ -6,7 +6,7 @@ require File.expand_path('../monkey',  __FILE__)
 
 data = IO.binread('monkeys.hessian.data')
 t0 = Time.new
-monkey = Hessian2::Parser.parse(data).last
+monkey = Hessian2.parse(data).last
 puts "#{Time.new - t0}s"
 puts "size: #{data.size}"
 puts monkey.inspect
