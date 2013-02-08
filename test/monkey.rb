@@ -45,7 +45,7 @@ class Monkey
     :sell_btd5ios_medium,
     :sell_btd5ios_hard
 
-  def self.generate(count = 0)
+  def self.generate(count = 10_000)
     [].tap do |arr|
       count.times do |i| 
         arr << Monkey.new(name: "Dart#{i}",
@@ -98,7 +98,7 @@ class Monkey
     end
   end
 
-  def self.generate_hash(count = 100_000)
+  def self.generate_hash(count = 10_000)
     [].tap do |arr|
       count.times do |i| 
         arr << { name: "Dart#{i}",

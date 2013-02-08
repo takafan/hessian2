@@ -14,7 +14,7 @@ post '/monkey' do
   begin
     status 200
     MonkeyService.handle(request.body.read)
-  rescue Exception => e
+  rescue NoMethodError, ArgumentError => e
     status 500
     Hessian2::Writer.write_fault(e)
   end

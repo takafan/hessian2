@@ -7,8 +7,6 @@ require File.expand_path('../monkey',  __FILE__)
 c1 = Hessian2::Client.new('http://127.0.0.1:9292/monkey')
 list1 = (1..7).to_a
 map1 = { name: '阿门', age: 7 }
-monkey1 = Monkey.new(map1)
-tmonkey1 = Hessian2::TypeWrapper.new('example.Monkey', map1)
 cmonkey1 = Hessian2::ClassWrapper.new('example.Monkey', map1)
 monkeys = []
 0x11.times do |i|
@@ -50,7 +48,7 @@ c1.set_bin_x8000(Hessian2::TypeWrapper.new('B', ['j' * 0x8000].pack('a*')))
 
 # 0x43 # object type definition ('C')
 # 0x60..0x6f # object with direct type
-c1.set_monkey(monkey1)
+c1.set_monkey(Monkey.new(map1))
 
 # 0x44 # 64-bit IEEE encoded double ('D')
 c1.set_double_min(4.9E-324)
@@ -90,7 +88,7 @@ c1.set_long_mx8_000_000_000_000_000(Hessian2::TypeWrapper.new('L', '-0x8_000_000
 c1.set_long_x7_fff_fff_fff_fff_fff(0x7_fff_fff_fff_fff_fff)
 
 # 0x4d # map with type ('M')
-c1.set_map(tmonkey1)
+c1.set_map(Hessian2::TypeWrapper.new('example.Monkey', map1))
 
 # 0x4e # null ('N')
 c1.set_null(nil)
@@ -184,5 +182,3 @@ c1.set_long_mx9(Hessian2::TypeWrapper.new('L', -0x9))
 c1.set_long_x10(Hessian2::TypeWrapper.new('L', 0x10))
 c1.set_long_mx800(Hessian2::TypeWrapper.new('L', -0x800))
 c1.set_long_x7ff(Hessian2::TypeWrapper.new('L', 0x7ff))
-
-begin c1.undefined_method; rescue Hessian2::Fault => e; puts e.message; end

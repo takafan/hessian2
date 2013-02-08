@@ -8,4 +8,4 @@ t0 = Time.new
 data = Yajl::Encoder.encode(monkeys)
 puts "#{Time.new - t0}s"
 puts "size: #{data.size}"
-IO.binwrite('monkeys.json.bin', data)
+IO.binwrite('hashes.json.data', data)

@@ -9,12 +9,12 @@ module Hessian2
       out = [ 'H', '2', '0', 'C' ].pack('ahha')
       out << self.write_string(method)
       out << self.write_int(args.size)
-      args.each { |arg| out << self.write_object(arg, refs, crefs, trefs) }
+      args.each { |arg| out << self.write(arg, refs, crefs, trefs) }
       out
     end
 
     def self.reply(val)
-      [ 'H', '2', '0', 'R' ].pack('ahha') << write_object(val)
+      [ 'H', '2', '0', 'R' ].pack('ahha') << write(val)
     end
 
     def self.write_fault(e)
@@ -25,7 +25,7 @@ module Hessian2
       [ 'F' ].pack('a') << self.write_map(val)
     end
 
-    def self.write_object(val, refs = {}, crefs = {}, trefs = {}, type = nil)
+    def self.write(val, refs = {}, crefs = {}, trefs = {}, type = nil)
       case val
       when ClassWrapper
         idx = refs[val.object_id]
@@ -59,11 +59,11 @@ module Hessian2
           vvals = obj.instance_variables.map{|sym| obj.instance_variable_get(sym)}
         end
         vvals.each do |vval|
-          str << self.write_object(vval, refs, crefs, trefs)
+          str << self.write(vval, refs, crefs, trefs)
         end
         str
       when TypeWrapper
-        self.write_object(val.object, refs, crefs, trefs, val.hessian_type)
+        self.write(val.object, refs, crefs, trefs, val.hessian_type)
       when TrueClass
         [ BC_TRUE ].pack('C')
       when FalseClass
@@ -127,7 +127,7 @@ module Hessian2
           end
         end
         val.each do |v|
-          str << self.write_object(v, refs, crefs, trefs)
+          str << self.write(v, refs, crefs, trefs)
         end
         str
       when Bignum
@@ -196,7 +196,7 @@ module Hessian2
         end
         vvals = val.instance_variables.map{|sym| val.instance_variable_get(sym)}
         vvals.each do |vval|
-          str << self.write_object(vval, refs, crefs, trefs)
+          str << self.write(vval, refs, crefs, trefs)
         end
         str
       end
@@ -288,8 +288,8 @@ module Hessian2
         str = [ BC_MAP_UNTYPED ].pack('C')
       end
       val.each do |k, v|
-        str << self.write_object(k, refs, crefs, trefs)
-        str << self.write_object(v, refs, crefs, trefs)
+        str << self.write(k, refs, crefs, trefs)
+        str << self.write(v, refs, crefs, trefs)
       end
       str << [ BC_END ].pack('C')
     end

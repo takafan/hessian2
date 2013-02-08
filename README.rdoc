@@ -8,9 +8,9 @@ hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://h
 
 yajl-ruby: json is readable and popular.
 
-msgpack: pack/unpack fast.
+msgpack: pack/unpack fastest.
 
-hessian2: referencable, serialize following objects only values, therefore smallest, and saving transfer.
+hessian2: any object, referencable, serialize field names once and following objects only values, therefore smallest, saving transfer.
 
 == client
 
@@ -19,7 +19,7 @@ hessian2: referencable, serialize following objects only values, therefore small
   url = 'http://127.0.0.1:9292/monkey'
   client = Hessian2::Client.new(url)
   
-  # call remote function: send_monkey(monkey)
+  # call remote function, send a monkey
   client.send_monkey(monkey)
 
 == install
@@ -34,17 +34,17 @@ hessian2: referencable, serialize following objects only values, therefore small
   client.send_file(Hessian2::TypeWrapper.new('B', binstr))
   
   # send a string as long
-  c1.send_long(Hessian2::TypeWrapper.new('L', '-0x8_000_000_000_000_000'))
+  client.send_long(Hessian2::TypeWrapper.new('L', '-0x8_000_000_000_000_000'))
 
 == class wrapper
   
-  # send a hash as a monkey
+  # send a hash as a monkey defined on remote
   hash = {name: '阿门', age: 7}
   client.send_monkey(Hessian2::ClassWrapper.new('Monkey', hash))
 
-  # send a batch of monkeys
+  # send a array as a batch of monkeys
   arr = [{name: '阿门', age: 7}, {name: '大鸡', age: 6}]
-  client.send_monkeys(arr.map{|hash| Hessian2::ClassWrapper.new('Monkey', hash)})
+  client.send_monkeys( arr.map{|hash| Hessian2::ClassWrapper.new('Monkey', hash)} )
 
 == service
 
@@ -78,6 +78,8 @@ hessian2: referencable, serialize following objects only values, therefore small
 supports packet+ and envelope+
 
 rsa aes encryption
+
+write in c
 
 == authors
 

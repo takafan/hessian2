@@ -4,7 +4,7 @@ $:.unshift(lib_path)
 require 'hessian2'
 require File.expand_path('../monkey',  __FILE__)
 
-data = IO.binread('monkeys.hessian.data')
+data = IO.binread('hashes.hessian.data')
 t0 = Time.new
 monkey = Hessian2::Parser.parse(data).last
 puts "#{Time.new - t0}s"

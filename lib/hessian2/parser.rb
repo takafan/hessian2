@@ -15,28 +15,25 @@ module Hessian2
       case bc
       when 0x43 # rpc call ('C')
         method = self.parse_string(bytes)
+        refs, cdefs = [], []
         args = [].tap do |arr|
-          self.parse_int(bytes).times{ arr << self.parse_bytes(bytes) }
+          self.parse_int(bytes).times{ arr << self.parse_bytes(bytes, refs, cdefs) }
         end
         [ method, *args ]
       when 0x46 # fault ('F')
         fault = self.parse_bytes(bytes)
         code, message = fault['code'], fault['message']
-        puts code
-        puts message
         raise Fault.new, code == 'RuntimeError' ? message : "#{code} - #{message}"
       when 0x52 # rpc result ('R')
         self.parse_bytes(bytes)
       else
-        raise Fault.new, "'#{bc}' not implemented"
+        raise data
       end
     end
 
     def self.parse(data)
       self.parse_bytes(data.bytes, refs = [], cdefs = [])
     end
-
-    private
 
     def self.parse_bytes(bytes, refs = [], cdefs = [])
       bc = bytes.next
@@ -81,10 +78,10 @@ module Hessian2
         self.read_date_minute(bytes)
       when 0x4c # 64-bit signed long integer ('L')
         self.read_long(bytes)
-      when 0x4d # map with type ('M')
-        self.parse_string(bytes) # skip type
+      when 0x4d # (legacy) map with type ('M')
+        self.parse_string(bytes)
         val = {}
-        refs << val # store a value reference first
+        refs << val
         while bytes.peek != BC_END
           val[self.parse_bytes(bytes, refs, cdefs)] = self.parse_bytes(bytes, refs, cdefs)
         end
@@ -111,16 +108,17 @@ module Hessian2
         self.parse_string(bytes) # skip type
         val = []
         refs << val # store a value reference first
-        while bytes.next != BC_END
+        while bytes.peek != BC_END
           val << self.parse_bytes(bytes, refs, cdefs)
         end
         bytes.next
         val
       when 0x56 # fixed-length list/vector ('V')
         self.parse_string(bytes) # skip type
+        val = []
         refs << val # store a value reference
-        self.parse_int(bytes).times do |i| 
-          val[i] = self.parse_bytes(bytes, refs, cdefs)
+        self.parse_int(bytes).times do
+          val << self.parse_bytes(bytes, refs, cdefs)
         end
         val
       when 0x57 # variable-length untyped list/vector ('W')
@@ -134,7 +132,7 @@ module Hessian2
       when 0x58 # fixed-length untyped list/vector ('X')
         val = []
         refs << val # store a value reference first
-        self.parse_int(bytes).times do |i| 
+        self.parse_int(bytes).times do
           val << self.parse_bytes(bytes, refs, cdefs)
         end
         val
@@ -183,7 +181,7 @@ module Hessian2
       when 0xf0..0xff # two-octet compact long (-x800 to x7ff, xf8 is 0)
         self.read_long_byte_zero(bytes, bc)
       else
-        raise Fault.new, "Invalid type: '#{bc}'"
+        raise sprintf("Invalid type: %#x", bc)
       end
     end
 
@@ -196,7 +194,7 @@ module Hessian2
       elsif bc & 0xf0 == 0xe0 # 1110xxxx 10xxxxxx 10xxxxxx
         ((bc & 0x0f) << 12) + ((bytes.next & 0x3f) << 6) + (bytes.next & 0x3f)
       else
-        raise Fault.new, "bad utf-8 encoding at '#{bc}'"
+        raise sprintf("bad utf-8 encoding at %#x", bc)
       end
     end
 
@@ -212,7 +210,7 @@ module Hessian2
       when 0x42
         self.read_binary(bytes)
       else
-        raise Fault.new, "'#{bc}' is not a binary"
+        raise sprintf("%#x is not a binary", bc)
       end
     end
 
@@ -228,7 +226,7 @@ module Hessian2
       when 0xd0..0xd7
         self.read_int_short_zero(bytes, bc)
       else
-        raise Fault.new, "'#{bc}' is not a int"
+        raise sprintf("%#x is not a int", bc)
       end
     end
 
@@ -244,9 +242,11 @@ module Hessian2
       when 0x53
         self.read_string(bytes)
       else
-        raise Fault.new, "'#{bc}' is not a string"
+        raise sprintf("%#x is not a string", bc)
       end
     end
+
+    private
 
     def self.read_binary_direct(bytes, bc)
       self.read_binary_string(bytes, bc - BC_BINARY_DIRECT)
@@ -260,7 +260,7 @@ module Hessian2
       chunks = []
       chunks << self.read_binary(bytes)
       while(bytes.peek == BC_BINARY_CHUNK)
-        bytes.next # skip 'A'
+        bytes.next
         chunks << self.read_binary(bytes)
       end
       chunks << self.parse_binary(bytes)
@@ -373,7 +373,7 @@ module Hessian2
       chunks = []
       chunks << self.read_string(bytes)
       while(bytes.peek == BC_STRING_CHUNK)
-        bytes.next # skip 'R'
+        bytes.next
         chunks << self.read_string(bytes)
       end
       chunks << self.parse_string(bytes)
@@ -390,5 +390,5 @@ module Hessian2
       end.pack('U*')
     end
 
-  end 
+  end
 end

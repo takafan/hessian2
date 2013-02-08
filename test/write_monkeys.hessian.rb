@@ -7,7 +7,7 @@ require File.expand_path('../monkey',  __FILE__)
 monkeys = Monkey.generate
 
 t0 = Time.new
-data = Hessian2::Writer.write_object(monkeys)
+data = Hessian2::Writer.write(monkeys)
 puts "#{Time.new - t0}s"
 puts "size: #{data.size}"
-IO.binwrite('monkeys.hessian.bin', data)
+IO.binwrite('monkeys.hessian.data', data)

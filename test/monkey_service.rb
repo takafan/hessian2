@@ -6,12 +6,6 @@ require File.expand_path('../monkey',  __FILE__)
 
 class MonkeyService
   extend Hessian2::Handler
-
-  def self.get_a_batch_of_monkeys(count = 100_000)
-    [].tap do |arr|
-      count.times{|i| arr << Monkey.new(name: "阿门#{i}", age: 7) }
-    end
-  end
   
   # 0x00..0x1f # utf-8 string length 0-31
   def self.get_string_0

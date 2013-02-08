@@ -2,10 +2,9 @@
 require 'msgpack'
 require File.expand_path('../monkey',  __FILE__)
 
-monkeys = Monkey.generate_hash
-
+data = IO.binread('hashes.msgpack.data')
 t0 = Time.new
-data = monkeys.to_msgpack
+monkey = MessagePack.unpack(data).last
 puts "#{Time.new - t0}s"
-puts data.size
-IO.binwrite('monkeys.msgpack.bin', data)
+puts "size: #{data.size}"
+puts monkey.inspect
