@@ -22,68 +22,80 @@ hessian2: sending object, referencable, serialize field names once then followin
 
 == serializing
 
-    require 'hessian2'
-    data = Hessian2.write(obj)
+.. code-block:: ruby
+
+  require 'hessian2'
+  data = Hessian2.write(obj)
 
 == deserializing 
 
-    require 'hessian2'
-    obj = Hessian2.parse(data)
+.. code-block:: ruby
+
+  require 'hessian2'
+  obj = Hessian2.parse(data)
 
 == client
 
-    url = 'http://127.0.0.1:9292/monkey'
-    client = Hessian2::Client.new(url)
-    
-    # call remote function, send a monkey
-    client.send_monkey(monkey)
+.. code-block:: ruby
+
+  url = 'http://127.0.0.1:9292/monkey'
+  client = Hessian2::Client.new(url)
+  
+  # call remote function, send a monkey
+  client.send_monkey(monkey)
 
 == type wrapper
-  
-    binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
 
-    # send a file as binary
-    client.send_file(Hessian2::TypeWrapper.new('B', binstr))
-    
-    # send a string as long
-    client.send_long(Hessian2::TypeWrapper.new('L', '-0x8_000_000_000_000_000'))
+.. code-block:: ruby
+
+  binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
+
+  # send a file as binary
+  client.send_file(Hessian2::TypeWrapper.new('B', binstr))
+  
+  # send a string as long
+  client.send_long(Hessian2::TypeWrapper.new('L', '-0x8_000_000_000_000_000'))
 
 == class wrapper
-  
-    # send a hash as a monkey defined on remote
-    hash = {name: '阿门', age: 7}
-    client.send_monkey(Hessian2::ClassWrapper.new('Monkey', hash))
 
-    # send a array as a batch of monkeys
-    arr = [{name: '阿门', age: 7}, {name: '大鸡', age: 6}]
-    client.send_monkeys( arr.map{|hash| Hessian2::ClassWrapper.new('Monkey', hash)} )
+.. code-block:: ruby
+
+  # send a hash as a monkey defined on remote
+  hash = {name: '阿门', age: 7}
+  client.send_monkey(Hessian2::ClassWrapper.new('Monkey', hash))
+
+  # send a array as a batch of monkeys
+  arr = [{name: '阿门', age: 7}, {name: '大鸡', age: 6}]
+  client.send_monkeys( arr.map{|hash| Hessian2::ClassWrapper.new('Monkey', hash)} )
 
 == service
 
-    class MonkeyService
-      extend Hessian2::Handler
+.. code-block:: ruby
 
-      def self.send_monkey(monkey)
-      # ...
-    end
-    
-    # a example, with sinatra
-    post '/monkey' do
-      MonkeyService.handle(request.body.read)
-    end
+  class MonkeyService
+    extend Hessian2::Handler
+
+    def self.send_monkey(monkey)
+    # ...
+  end
+  
+  # a example, with sinatra
+  post '/monkey' do
+    MonkeyService.handle(request.body.read)
+  end
 
 == test
   
-    cd test/
+  cd test/
 
-    # start a service
-    rackup -E production
+  # start a service
+  rackup -E production
 
-    # test parser
-    ruby ./get.rb
+  # test parser
+  ruby ./get.rb
 
-    # test writer
-    ruby ./set.rb
+  # test writer
+  ruby ./set.rb
 
 == todo
 
