@@ -41,7 +41,7 @@ module Hessian2
           if obj.class == Hash
             vars = obj.keys
           else
-            vars = obj.instance_variables.map{|sym| sym.to_s[1..-1]} # shift '@'
+            vars = obj.instance_variables.map{|sym| sym.to_s[1..-1]} # skip '@'
           end
           str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(vars.size)
           vars.each do |var|

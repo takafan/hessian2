@@ -179,10 +179,10 @@ public interface IMonkeyService {
 	
 	// 0x56 # fixed-length list/vector ('V')
 	// 0x58 # fixed-length untyped list/vector ('X')
-	public int[] get_list();
+	public Monkey[] get_list();
 	public List get_untyped_list();
 	
-	public void set_list(int[] list1);
+	public void set_list(Monkey[] list1);
 	
 	// 0x59 # long encoded as 32-bit int ('Y')
 	public long get_long_mx40001();
@@ -225,13 +225,13 @@ public interface IMonkeyService {
 	
 	// 0x70..0x77 # fixed list with direct length 
 	// 0x78..0x7f # fixed untyped list with direct length
-	public int[] get_list_size0();
-	public int[] get_list_size7();
+	public Monkey[] get_list_size0();
+	public Monkey[] get_list_size7();
 	public List get_untyped_list_size0();
 	public List get_untyped_list_size7();
 	
-	public void set_list_size0(int[] list1);
-	public void set_list_size7(int[] list1);
+	public void set_list_size0(Monkey[] list1);
+	public void set_list_size7(Monkey[] list1);
 	
 	// 0x80..0xbf # one-octet compact int (-x10 to x2f, x90 is 0)
 	public int get_int_mx10();

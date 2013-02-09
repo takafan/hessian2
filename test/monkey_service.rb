@@ -165,7 +165,7 @@ class MonkeyService
   end
   
   def self.set_monkey(monkey1)
-    print_assert 'set_monkey', monkey1['name'] == '阿门' && monkey1['age'] == 7
+    print_assert 'set_monkey', monkey1.name == '阿门' && monkey1.age == 7
   end
   
   # 0x44 # 64-bit IEEE encoded double ('D')
@@ -326,7 +326,7 @@ class MonkeyService
   end
 
   def self.set_map(map1)
-    print_assert 'set_map', map1['name'] == '阿门' && map1['age'] == 7
+    print_assert 'set_map', map1.name == '阿门' && map1.age == 7
   end
   
   # 0x4e # null ('N')
@@ -378,7 +378,7 @@ class MonkeyService
   end
   
   def self.set_map_list_monkey_map_list_monkey(map1, list1, monkey1, map2, list2, monkey2)
-    print_assert 'set_map_list_monkey_map_list_monkey', map1['name'] == map2['name'] && list1[0] == list2[0] && monkey1['name'] == monkey2['name']
+    print_assert 'set_map_list_monkey_map_list_monkey', map1['name'] == map2['name'] && list1[0] == list2[0] && monkey1.name == monkey2.name
   end
   
   # 0x52 # utf-8 string non-final chunk ('R')

@@ -15,9 +15,9 @@ module Hessian2
       case bc
       when 0x43 # rpc call ('C')
         method = parse_string(bytes)
-        refs, cdefs = [], []
+        refs, cdefs, trefs = [], [], []
         args = [].tap do |arr|
-          parse_int(bytes).times{ arr << parse_bytes(bytes, refs, cdefs) }
+          parse_int(bytes).times{ arr << parse_bytes(bytes, refs, cdefs, trefs) }
         end
         [ method, *args ]
       when 0x46 # fault ('F')
@@ -32,10 +32,10 @@ module Hessian2
     end
 
     def parse(data)
-      parse_bytes(data.bytes, refs = [], cdefs = [])
+      parse_bytes(data.bytes)
     end
 
-    def parse_bytes(bytes, refs = [], cdefs = [])
+    def parse_bytes(bytes, refs = [], cdefs = [], trefs = [], type = nil)
       bc = bytes.next
       case bc
       when 0x00..0x1f # utf-8 string length 0-31
@@ -53,20 +53,20 @@ module Hessian2
       when 0x42 # 8-bit binary data final chunk ('B')
         read_binary(bytes)
       when 0x43 # object type definition ('C')
-        parse_string(bytes) # skip class name
         attrs = []
-        cdefs << attrs
+        cdefs << [parse_string(bytes), attrs]
         parse_int(bytes).times{ attrs << parse_string(bytes) } # store a class reference
-        parse_bytes(bytes, refs, cdefs)
+        parse_bytes(bytes, refs, cdefs, trefs, type)
       when 0x44 # 64-bit IEEE encoded double ('D')
         read_double(bytes)
       when 0x46 # boolean false ('F')
         false
       when 0x48 # untyped map ('H')
+        # if type
         val = {}
         refs << val # store a value reference first
         while bytes.peek != BC_END
-          val[parse_bytes(bytes, refs, cdefs)] = parse_bytes(bytes, refs, cdefs)
+          val[parse_bytes(bytes, refs, cdefs, trefs)] = parse_bytes(bytes, refs, cdefs, trefs)
         end
         bytes.next
         val
@@ -78,22 +78,23 @@ module Hessian2
         read_date_minute(bytes)
       when 0x4c # 64-bit signed long integer ('L')
         read_long(bytes)
-      when 0x4d # (legacy) map with type ('M')
-        parse_string(bytes)
-        val = {}
-        refs << val
+      when 0x4d # map with type ('M')
+        val = Object.const_get(parse_string(bytes)).new
+        refs << val # store a value reference first
         while bytes.peek != BC_END
-          val[parse_bytes(bytes, refs, cdefs)] = parse_bytes(bytes, refs, cdefs)
+          val.instance_variable_set('@' + parse_bytes(bytes, refs, cdefs, trefs), parse_bytes(bytes, refs, cdefs, trefs) )
         end
         bytes.next
         val
       when 0x4e # null ('N')
         nil
       when 0x4f # object instance ('O')
-        val = {}
-        refs << val
-        cdefs[parse_int(bytes)].each do |f| 
-          val[f] = parse_bytes(bytes, refs, cdefs)
+        # if type
+        cdef = cdefs[parse_int(bytes)]
+        val = Object.const_get(cdef.first).new
+        refs << val # store a value reference first
+        cdef.last.each do |f|
+          val.instance_variable_set('@' << f, parse_bytes(bytes, refs, cdefs, trefs) )
         end
         val
       when 0x51 # reference to map/list/object - integer ('Q')
@@ -109,7 +110,7 @@ module Hessian2
         val = []
         refs << val # store a value reference first
         while bytes.peek != BC_END
-          val << parse_bytes(bytes, refs, cdefs)
+          val << parse_bytes(bytes, refs, cdefs, trefs)
         end
         bytes.next
         val
@@ -149,10 +150,11 @@ module Hessian2
       when 0x5f # double represented as float
         read_double_mill(bytes)
       when 0x60..0x6f # object with direct type
-        val = {}
+        cdef = cdefs[bc - BC_OBJECT_DIRECT]
+        val = Object.const_get(cdef.first).new
         refs << val # store a value reference first
-        cdefs[bc - BC_OBJECT_DIRECT].each do |f| 
-          val[f] = parse_bytes(bytes, refs, cdefs)
+        cdef.last.each do |f|
+          val.instance_variable_set('@' << f, parse_bytes(bytes, refs, cdefs) )
         end
         val
       when 0x70..0x77 # fixed list with direct length
@@ -359,6 +361,22 @@ module Hessian2
 
     def read_long_short_zero(bytes, bc)
       ((bc - BC_LONG_SHORT_ZERO) << 16) + (bytes.next << 8) + bytes.next
+    end
+
+    def read_object(bytes, klass_name, ks, vs)
+      qks = ks.map{|k| '@' << k }
+      sks = ks.map{|k| k << '=' }
+      klass = Class.new do
+        qks.each_with_index do |qk, i|
+          send(:define_method, ks[i], proc{instance_variable_get(qk)} )
+          send(:define_method, sks[i], proc{|v| instance_variable_set(qk, v)} )
+        end
+      end
+      obj = Object.const_set(klass_name, klass).new
+      qks.each_with_index do |qk, i|
+        obj.instance_variable_set(qk, vs[i])
+      end
+      obj
     end
 
     def read_string_direct(bytes, bc)

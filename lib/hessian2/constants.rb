@@ -1,70 +1,71 @@
-# Hessian 2.0 Web Services Protocol Bytecode map
-# x00 - x42    # reserved
-# x43          # rpc call ('C')
-# x44          # reserved
-# x45          # envelope ('E')
-# x46          # fault ('F')
-# x47          # reserved
-# x48          # hessian version ('H')
-# x49 - x4f    # reserved
-# x4f          # packet chunk ('O')
-# x50          # packet end ('P')
-# x51          # reserved
-# x52          # rpc result ('R')
-# x53 - x59    # reserved
-# x5a          # terminator ('Z')
-# x5b - x5f    # reserved
-# x70 - x7f    # final packet (0 - 4096)
-# x80 - xff    # final packet for envelope (0 - 127)
-
-# Hessian 2.0 Serialization Protocol Bytecode map
-# x00 - x1f    # utf-8 string length 0-31
-# x20 - x2f    # binary data length 0-15
-# x30 - x33    # utf-8 string length 0-1023
-# x34 - x37    # binary data length 0-1023
-# x38 - x3f    # three-octet compact long (-x40000 to x3ffff)
-# x40          # reserved (expansion/escape)
-# x41          # 8-bit binary data non-final chunk ('A')
-# x42          # 8-bit binary data final chunk ('B')
-# x43          # object type definition ('C')
-# x44          # 64-bit IEEE encoded double ('D')
-# x45          # reserved
-# x46          # boolean false ('F')
-# x47          # reserved
-# x48          # untyped map ('H')
-# x49          # 32-bit signed integer ('I')
-# x4a          # 64-bit UTC millisecond date
-# x4b          # 32-bit UTC minute date
-# x4c          # 64-bit signed long integer ('L')
-# x4d          # map with type ('M')
-# x4e          # null ('N')
-# x4f          # object instance ('O')
-# x50          # reserved
-# x51          # reference to map/list/object - integer ('Q')
-# x52          # utf-8 string non-final chunk ('R')
-# x53          # utf-8 string final chunk ('S')
-# x54          # boolean true ('T')
-# x55          # variable-length list/vector ('U')
-# x56          # fixed-length list/vector ('V')
-# x57          # variable-length untyped list/vector ('W')
-# x58          # fixed-length untyped list/vector ('X')
-# x59          # long encoded as 32-bit int ('Y')
-# x5a          # list/map terminator ('Z')
-# x5b          # double 0.0
-# x5c          # double 1.0
-# x5d          # double represented as byte (-128.0 to 127.0)
-# x5e          # double represented as short (-32768.0 to 32767.0)
-# x5f          # double represented as float
-# x60 - x6f    # object with direct type
-# x70 - x77    # fixed list with direct length
-# x78 - x7f    # fixed untyped list with direct length
-# x80 - xbf    # one-octet compact int (-x10 to x3f, x90 is 0)
-# xc0 - xcf    # two-octet compact int (-x800 to x7ff)
-# xd0 - xd7    # three-octet compact int (-x40000 to x3ffff)
-# xd8 - xef    # one-octet compact long (-x8 to xf, xe0 is 0)
-# xf0 - xff    # two-octet compact long (-x800 to x7ff, xf8 is 0)
-
 module Hessian2
+  #=== Hessian 2.0 Web Services Protocol Bytecode map
+  #
+  #   x00 - x42    # reserved
+  #   x43          # rpc call ('C')
+  #   x44          # reserved
+  #   x45          # envelope ('E')
+  #   x46          # fault ('F')
+  #   x47          # reserved
+  #   x48          # hessian version ('H')
+  #   x49 - x4f    # reserved
+  #   x4f          # packet chunk ('O')
+  #   x50          # packet end ('P')
+  #   x51          # reserved
+  #   x52          # rpc result ('R')
+  #   x53 - x59    # reserved
+  #   x5a          # terminator ('Z')
+  #   x5b - x5f    # reserved
+  #   x70 - x7f    # final packet (0 - 4096)
+  #   x80 - xff    # final packet for envelope (0 - 127)
+  #
+  #=== Hessian 2.0 Serialization Protocol Bytecode map
+  #
+  #   x00 - x1f    # utf-8 string length 0-31
+  #   x20 - x2f    # binary data length 0-15
+  #   x30 - x33    # utf-8 string length 0-1023
+  #   x34 - x37    # binary data length 0-1023
+  #   x38 - x3f    # three-octet compact long (-x40000 to x3ffff)
+  #   x40          # reserved (expansion/escape)
+  #   x41          # 8-bit binary data non-final chunk ('A')
+  #   x42          # 8-bit binary data final chunk ('B')
+  #   x43          # object type definition ('C')
+  #   x44          # 64-bit IEEE encoded double ('D')
+  #   x45          # reserved
+  #   x46          # boolean false ('F')
+  #   x47          # reserved
+  #   x48          # untyped map ('H')
+  #   x49          # 32-bit signed integer ('I')
+  #   x4a          # 64-bit UTC millisecond date
+  #   x4b          # 32-bit UTC minute date
+  #   x4c          # 64-bit signed long integer ('L')
+  #   x4d          # map with type ('M')
+  #   x4e          # null ('N')
+  #   x4f          # object instance ('O')
+  #   x50          # reserved
+  #   x51          # reference to map/list/object - integer ('Q')
+  #   x52          # utf-8 string non-final chunk ('R')
+  #   x53          # utf-8 string final chunk ('S')
+  #   x54          # boolean true ('T')
+  #   x55          # variable-length list/vector ('U')
+  #   x56          # fixed-length list/vector ('V')
+  #   x57          # variable-length untyped list/vector ('W')
+  #   x58          # fixed-length untyped list/vector ('X')
+  #   x59          # long encoded as 32-bit int ('Y')
+  #   x5a          # list/map terminator ('Z')
+  #   x5b          # double 0.0
+  #   x5c          # double 1.0
+  #   x5d          # double represented as byte (-128.0 to 127.0)
+  #   x5e          # double represented as short (-32768.0 to 32767.0)
+  #   x5f          # double represented as float
+  #   x60 - x6f    # object with direct type
+  #   x70 - x77    # fixed list with direct length
+  #   x78 - x7f    # fixed untyped list with direct length
+  #   x80 - xbf    # one-octet compact int (-x10 to x3f, x90 is 0)
+  #   xc0 - xcf    # two-octet compact int (-x800 to x7ff)
+  #   xd0 - xd7    # three-octet compact int (-x40000 to x3ffff)
+  #   xd8 - xef    # one-octet compact long (-x8 to xf, xe0 is 0)
+  #   xf0 - xff    # two-octet compact long (-x800 to x7ff, xf8 is 0)
   module Constants
     BC_BINARY = 0x42
     BC_BINARY_CHUNK = 0x41

@@ -2,6 +2,7 @@ package example;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -734,9 +735,9 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	
 	// 0x56 # fixed-length list/vector ('V')
 	// 0x58 # fixed-length untyped list/vector ('X')
-	public int[] get_list()
+	public Monkey[] get_list()
 	{
-		return new int[]{1,2,3,4,5,6,7,1,2,3,4,5,6,7};
+		return new Monkey[]{new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey(), new Monkey()};
 	}
 	
 	public List get_untyped_list()
@@ -753,9 +754,9 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		return list1;
 	}
 	
-	public void set_list(int[] list1)
+	public void set_list(Monkey[] list1)
 	{
-		boolean isT = list1.length == 14 && list1[0] == 1; 
+		boolean isT = list1.length == 14; 
 		printAssert("set_list", isT);
 	}
 	
@@ -898,14 +899,14 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 	
 	// 0x70..0x77 # fixed list with direct length 
 	// 0x78..0x7f # fixed untyped list with direct length
-	public int[] get_list_size0()
+	public Monkey[] get_list_size0()
 	{
-		return new int[]{};
+		return new Monkey[]{};
 	}
 	
-	public int[] get_list_size7()
+	public Monkey[] get_list_size7()
 	{
-		return new int[]{1,2,3,4,5,6,7};
+		return new Monkey[]{new Monkey(),new Monkey(),new Monkey(),new Monkey(),new Monkey(),new Monkey(),new Monkey()};
 	}
 	
 	public List get_untyped_list_size0()
@@ -923,15 +924,15 @@ public class MonkeyService extends HessianServlet implements IMonkeyService {
 		return list1;
 	}
 	
-	public void set_list_size0(int[] list1)
+	public void set_list_size0(Monkey[] list1)
 	{
 		boolean isT = list1.length == 0;
 		printAssert("set_list_size0", isT);
 	}
 	
-	public void set_list_size7(int[] list1)
+	public void set_list_size7(Monkey[] list1)
 	{
-		boolean isT = list1.length == 7 && list1[0] == 1;
+		boolean isT = list1.length == 7;
 		printAssert("set_list_size7", isT);
 	}
 	
