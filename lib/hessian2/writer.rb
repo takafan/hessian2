@@ -25,42 +25,68 @@ module Hessian2
       [ 'F' ].pack('a') << write_map(val)
     end
 
-    def write(val, refs = {}, crefs = {}, trefs = {}, type = nil)
+    def write(val, refs = {}, crefs = {}, trefs = {}, wtype = nil, cidx = nil, fmask = {})
       case val
-      when ClassWrapper
+      when ClassWrapper # hash as monkey; monkey as example.monkey; [hash as [monkey; [monkey as [example.monkey
         idx = refs[val.object_id]
         return write_ref(idx) if idx
+        obj = val.object
+        return write_null if obj.nil?
         refs[val.object_id] = refs.size # store a value reference
         klass = val.hessian_class
-        obj = val.object
-        if crefs.include?(klass)
-          cidx = crefs[klass]
+        # is_obj_arr = klass[0] == '['
+        return [ BC_LIST_DIRECT_UNTYPED ].pack('C') if obj.class == Array and obj.size == 0
+
+        fclass = klass.delete('[]')
+        if crefs.include?(fclass)
+          cidx = crefs[fclass]
+          
           str = ''
         else
-          cidx = crefs[klass] = crefs.size # store a class definition
-          if obj.class == Hash
+          cidx = crefs[fclass] = crefs.size # store a class definition
+          if obj.class == Array
+            sample = obj.first
+            if sample.class == Hash
+              vars = sample.keys
+            else
+              vars = sample.instance_variables.map{|sym| sym.to_s[1..-1]} # skip '@'
+            end
+          elsif obj.class == Hash
             vars = obj.keys
           else
             vars = obj.instance_variables.map{|sym| sym.to_s[1..-1]} # skip '@'
           end
-          str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(vars.size)
+          fmask[cidx] = vars
+          str = [ BC_OBJECT_DEF ].pack('C') << write_string(fclass) << write_int(vars.size)
           vars.each do |var|
             str << write_string(var)
           end
         end
-        if cidx <= OBJECT_DIRECT_MAX
-          str << [ BC_OBJECT_DIRECT + cidx ].pack('C')
-        else
-          str << [ BC_OBJECT ].pack('C') << write_int(cidx)
-        end
-        if obj.class == Hash
-          vvals = obj.values
-        else
-          vvals = obj.instance_variables.map{|sym| obj.instance_variable_get(sym)}
-        end
-        vvals.each do |vval|
-          str << write(vval, refs, crefs, trefs)
-        end
+
+        # if cidx <= OBJECT_DIRECT_MAX
+        #   str << [ BC_OBJECT_DIRECT + cidx ].pack('C')
+        # else
+        #   str << [ BC_OBJECT ].pack('C') << write_int(cidx)
+        # end
+
+        # if is_obj_arr
+        #   sample = obj.first
+        #   if sample.class == Hash
+        #     vvals = sample.values
+        #   else
+        #     vvals = sample.instance_variables.map{|sym| obj.instance_variable_get(sym)}
+        #   end
+        # elsif obj.class == Hash
+        #   vvals = obj.values
+        # else
+        #   vvals = obj.instance_variables.map{|sym| obj.instance_variable_get(sym)}
+        # end
+
+        # vvals.each do |vval|
+        #   str << write(vval, refs, crefs, trefs)
+        # end
+        str << write(obj, refs, crefs, trefs, nil, cidx, fmask)
+
         str
       when TypeWrapper
         write(val.object, refs, crefs, trefs, val.hessian_type)
@@ -99,42 +125,15 @@ module Hessian2
           [ BC_DOUBLE, val ].pack('CG') # double
         end
       when Fixnum
-        return write_long(val) if type and %w[ L Long long ].include?(type)
+        return write_long(val) if wtype and %w[ L Long long ].include?(wtype)
         write_int(val)
       when Array
-        idx = refs[val.object_id]
-        return write_ref(idx) if idx
-        refs[val.object_id] = refs.size # store a value reference
-        if type
-          if trefs.include?(type)
-            tstr = write_int(trefs[type])
-          else
-            trefs[type] = trefs.size # store a type
-            tstr = write_string(type)
-          end
-          len = val.size
-          if len <= LIST_DIRECT_MAX # [x70-77] type value*
-            str = [ BC_LIST_DIRECT + len ].pack('C') << tstr
-          else  # 'V' type int value*
-            str = [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
-          end
-        else
-          len = val.size
-          if len <= LIST_DIRECT_MAX # [x78-7f] value*
-            str = [ BC_LIST_DIRECT_UNTYPED + len ].pack('C')
-          else  # x58 int value*
-            str = [ BC_LIST_FIXED_UNTYPED ].pack('C') << write_int(len)
-          end
-        end
-        val.each do |v|
-          str << write(v, refs, crefs, trefs)
-        end
-        str
+        write_list()
       when Bignum
-        if type
-          if %w[ I Integer int ].include?(type)
+        if wtype
+          if %w[ I Integer int ].include?(wtype)
             return write_int(val)
-          elsif %w[ L Long long ].include?(type)
+          elsif %w[ L Long long ].include?(wtype)
             return write_long(val)
           end
         end
@@ -144,12 +143,12 @@ module Hessian2
           [ BC_LONG, val ].pack('Cq>')
         end
       when Hash
-        write_map(val, refs, crefs, trefs, type)
+        write_map(val, refs, crefs, cidx, fmask)
       when NilClass
-        [ BC_NULL ].pack('C')
+        write_null
       when String
-        if type 
-          if %w[ B b ].include?(type)
+        if wtype 
+          if %w[ B b ].include?(wtype)
             chunks, i, len = [], 0, val.size
             while len > 0x8000
               chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << val[i...(i += 0x8000)]
@@ -164,9 +163,9 @@ module Hessian2
               chunks << [ BC_BINARY, len ].pack('Cn') << final
             end
             return chunks.join
-          elsif %w[ I Integer int ].include?(type)
+          elsif %w[ I Integer int ].include?(wtype)
             return write_int(Integer(val))
-          elsif %w[ L Long long ].include?(type)
+          elsif %w[ L Long long ].include?(wtype)
             return write_long(Integer(val))
           end
         end
@@ -177,16 +176,19 @@ module Hessian2
         idx = refs[val.object_id]
         return write_ref(idx) if idx
         refs[val.object_id] = refs.size # store a value reference
-        klass = val.class
-        if crefs.include?(klass)
-          cidx = crefs[klass]
-          str = ''
-        else
-          cidx = crefs[klass] = crefs.size # store a class definition
-          vars = val.instance_variables.map{|sym| sym.to_s[1..-1]} # shift '@'
-          str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(vars.size)
-          vars.each do |var|
-            str << write_string(var)
+        unless cidx
+          klass = val.class
+          if crefs.include?(klass)
+            cidx = crefs[klass]
+            str = ''
+          else
+            cidx = crefs[klass] = crefs.size # store a class definition
+            vars = val.instance_variables.map{|sym| sym.to_s[1..-1]} # shift '@'
+            fmask[cidx] = vars
+            str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(vars.size)
+            vars.each do |var|
+              str << write_string(var)
+            end
           end
         end
         if cidx <= OBJECT_DIRECT_MAX
@@ -194,9 +196,8 @@ module Hessian2
         else
           str << [ BC_OBJECT ].pack('C') << write_int(cidx)
         end
-        vvals = val.instance_variables.map{|sym| val.instance_variable_get(sym)}
-        vvals.each do |vval|
-          str << write(vval, refs, crefs, trefs)
+        fmask[cidx].each do |f|
+          str << write(val.instance_variable_get("@#{f}".to_sym), refs, crefs, trefs)
         end
         str
       end
@@ -272,26 +273,99 @@ module Hessian2
       chunks << print_string(final)
     end
 
-    def write_map(val, refs = {}, crefs = {}, trefs = {}, type = nil)
+    def write_list(val, refs = {}, crefs = {}, trefs = {}, wtype = nil)
       idx = refs[val.object_id]
       return write_ref(idx) if idx
       refs[val.object_id] = refs.size # store a value reference
-      if type
-        if trefs.include?(type)
-          tstr = write_int(trefs[type])
+      if wtype
+        # if trefs.include?(wtype)
+        #   tstr = write_int(trefs[wtype])
+        # else
+        #   trefs[wtype] = trefs.size # store a type
+        #   tstr = write_string(wtype)
+        # end
+        # len = val.size
+        # if len <= LIST_DIRECT_MAX # [x70-77] type value*
+        #   str = [ BC_LIST_DIRECT + len ].pack('C') << tstr
+        # else  # 'V' type int value*
+        #   str = [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
+        # end
+
+        # store wtyped array as a object array
+        klass = wtype.delete('[]')
+        if crefs.include?(klass)
+          cidx = crefs[klass]
+          str = ''
         else
-          trefs[type] = trefs.size # store a type
-          tstr = write_string(type)
+          cidx = crefs[klass] = crefs.size # store a class definition
+          vars = val.instance_variables.map{|sym| sym.to_s[1..-1]} # shift '@'
+          str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(vars.size)
+          vars.each do |var|
+            str << write_string(var)
+          end
         end
-        str = [ BC_MAP ].pack('C') << tstr
+        if cidx <= OBJECT_DIRECT_MAX
+          str << [ BC_OBJECT_DIRECT + cidx ].pack('C')
+        else
+          str << [ BC_OBJECT ].pack('C') << write_int(cidx)
+        end
+        vvals = val.instance_variables.map{|sym| val.instance_variable_get(sym)}
+        vvals.each do |vval|
+          str << write(vval, refs, crefs, trefs)
+        end
+
+        
       else
-        str = [ BC_MAP_UNTYPED ].pack('C')
+        len = val.size
+        if len <= LIST_DIRECT_MAX # [x78-7f] value*
+          str = [ BC_LIST_DIRECT_UNTYPED + len ].pack('C')
+        else  # x58 int value*
+          str = [ BC_LIST_FIXED_UNTYPED ].pack('C') << write_int(len)
+        end
       end
-      val.each do |k, v|
-        str << write(k, refs, crefs, trefs)
+      val.each do |v|
         str << write(v, refs, crefs, trefs)
       end
-      str << [ BC_END ].pack('C')
+      str
+    end
+
+    def write_map(val, refs = {}, crefs = {}, cidx = nil, fmask = {})
+      idx = refs[val.object_id]
+      return write_ref(idx) if idx
+      refs[val.object_id] = refs.size # store a value reference
+      # if wtype
+      #   if trefs.include?(wtype)
+      #     tstr = write_int(trefs[wtype])
+      #   else
+      #     trefs[wtype] = trefs.size # store a type
+      #     tstr = write_string(wtype)
+      #   end
+      #   str = [ BC_MAP ].pack('C') << tstr
+      # else
+      #   str = [ BC_MAP_UNTYPED ].pack('C')
+      # end
+      if cidx
+        if cidx <= OBJECT_DIRECT_MAX
+          str = [ BC_OBJECT_DIRECT + cidx ].pack('C')
+        else
+          str = [ BC_OBJECT ].pack('C') << write_int(cidx)
+        end
+        fmask[cidx].each do |f|
+          str << write(val[f], refs, crefs, trefs)
+        end
+      else
+        str = [ BC_MAP_UNTYPED ].pack('C')
+        val.each do |k, v|
+          str << write(k, refs, crefs, trefs)
+          str << write(v, refs, crefs, trefs)
+        end
+        str << [ BC_END ].pack('C')
+      end
+      str
+    end
+
+    def write_null
+      [ BC_NULL ].pack('C')
     end
 
   end

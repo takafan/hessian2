@@ -151,10 +151,18 @@ module Hessian2
         read_double_mill(bytes)
       when 0x60..0x6f # object with direct type
         cdef = cdefs[bc - BC_OBJECT_DIRECT]
-        val = Object.const_get(cdef.first).new
-        refs << val # store a value reference first
-        cdef.last.each do |f|
-          val.instance_variable_set('@' << f, parse_bytes(bytes, refs, cdefs) )
+        if Object.const_defined?(cdef.first)
+          val = Object.const_get(cdef.first).new
+          refs << val # store a value reference first
+          cdef.last.each do |f|
+            val.instance_variable_set('@' << f, parse_bytes(bytes, refs, cdefs) )
+          end
+        else
+          val = {}
+          refs << val # store a value reference first
+          cdef.last.each do |f|
+            val[f] = parse_bytes(bytes, refs, cdefs)
+          end
         end
         val
       when 0x70..0x77 # fixed list with direct length
