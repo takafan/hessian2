@@ -9,6 +9,7 @@ c1 = Hessian2::Client.new('http://127.0.0.1:9292/monkey')
 map1 = { name: '阿门', age: 7 }
 cjmonkey1 = Hessian2::ClassWrapper.new('example.Monkey', map1)
 cmonkey1 = Hessian2::ClassWrapper.new('Monkey', map1)
+map1_list = [map1] * 7
 list1 = [cjmonkey1] * 7
 monkeys = []
 0x11.times do |i|
@@ -16,7 +17,8 @@ monkeys = []
 end
 now = Time.new(2013, 1, 12, 14, 59, 59)
 
-c1.set_list(Hessian2::TypeWrapper.new('[Monkey', list1 * 2))
+# c1.set_list_int(Hessian2::TypeWrapper.new('[int', [1,2,3,4,5,6,7] * 2))
+c1.set_list_monkey(Hessian2::ClassWrapper.new('[Monkey', map1_list * 2))
 # c1.set_list(list1 * 2)
 
 # c1.set_list_size0(Hessian2::TypeWrapper.new('[Monkey', []))

@@ -453,6 +453,14 @@ class MonkeyService
   def self.set_list(list1)
     print_assert 'set_list', list1.size == 14 && list1[0] == 1
   end
+
+  def self.set_list_int(list1)
+    print_assert 'set_list_int', list1.size == 14 && list1[0] == 1
+  end
+
+  def self.set_list_monkey(list1)
+    print_assert 'set_list_monkey', list1.size == 14 && list1[0].name == '阿门' && list1[0].age == 7
+  end
   
   # 0x59 # long encoded as 32-bit int ('Y')
   def self.get_long_mx40001
