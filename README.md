@@ -46,38 +46,47 @@ client = Hessian2::Client.new(url)
 ### call remote function, send a monkey
 
 ``` ruby
+monkey = Monkey.new(name: '阿门', age: 7)
 client.send_monkey(monkey)
-```
-
-## type wrapper
-
-### send a file as binary
-
-``` ruby
-binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
-client.send_file(Hessian2::TypeWrapper.new('B', binstr))
-```
-
-### send a string as long
-
-``` ruby
-client.send_long(Hessian2::TypeWrapper.new('L', '-0x8_000_000_000_000_000'))
 ```
 
 ## class wrapper
 
-### send a hash as a monkey defined on remote
+### wrap a hash as a monkey
 
 ``` ruby
 hash = {name: '阿门', age: 7}
-client.send_monkey(Hessian2::ClassWrapper.new('Monkey', hash))
+monkey = Hessian2::ClassWrapper.new('Monkey', hash)
 ```
 
-### send a array as a batch of monkeys
+### wrap a batch of monkeys
 
 ``` ruby
 arr = [{name: '阿门', age: 7}, {name: '大鸡', age: 6}]
-client.send_monkeys( arr.map{|hash| Hessian2::ClassWrapper.new('Monkey', hash)} )
+monkeys = Hessian2::ClassWrapper.new('[Monkey', arr)
+```
+
+## type wrapper
+
+### wrap a string as long
+
+``` ruby
+str = '-0x8_000_000_000_000_000'
+long = Hessian2::TypeWrapper.new('L', str)
+```
+
+### wrap a file as binary
+
+``` ruby
+binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
+file = Hessian2::TypeWrapper.new('B', binstr)
+```
+
+### wrap a batch of files
+
+``` ruby
+arr = [binstr1, binstr2]
+files = Hessian2::TypeWrapper.new('[B', arr))
 ```
 
 ## service
@@ -127,7 +136,7 @@ ruby ./set.rb
 
 ## todo
 
-parse objects by type TypeWrapper.new('[Monkey', [{name: '阿门', age: 7}])
+classwrapper typewrapper
 
 supports packet+ and envelope+
 
