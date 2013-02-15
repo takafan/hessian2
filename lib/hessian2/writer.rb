@@ -28,12 +28,12 @@ module Hessian2
     def write(val, refs = {}, crefs = {}, trefs = {})
       case val
       when ClassWrapper # hash as monkey; monkey as example.monkey; [hash as [monkey; [monkey as [example.monkey
-        idx = refs[val.object_id]
-        return write_ref(idx) if idx
+        # idx = refs[val.object_id]
+        # return write_ref(idx) if idx
 
         obj = val.object
         return write_nil if obj.nil?
-        refs[val.object_id] = refs.size # store a value reference
+        # refs[val.object_id] = refs.size # store a value reference
 
         if obj.class == Array 
           type = val.hessian_class
@@ -102,12 +102,12 @@ module Hessian2
 
         str
       when TypeWrapper
-        idx = refs[val.object_id]
-        return write_ref(idx) if idx
+        # idx = refs[val.object_id]
+        # return write_ref(idx) if idx
 
         obj = val.object
         return write_nil if obj.nil?
-        refs[val.object_id] = refs.size
+        # refs[val.object_id] = refs.size
 
         type = val.hessian_type
         if obj.class == Array 

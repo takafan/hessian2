@@ -459,8 +459,7 @@ class MonkeyService
   end
 
   def self.set_list_monkey(list1)
-    puts list1.inspect
-    print_assert 'set_list_monkey', list1.size == 14 && list1[0].name == '阿门' && list1[0].age == 7
+    print_assert 'set_list_monkey', list1.size == 14 && list1.last.name == '阿门' && list1.last.age == 7
   end
   
   # 0x59 # long encoded as 32-bit int ('Y')

@@ -94,7 +94,7 @@ module Hessian2
         val = Object.const_get(cdef.first).new
         refs << val # store a value reference first
         cdef.last.each do |f|
-          val.instance_variable_set('@' << f, parse_bytes(bytes, refs, cdefs, trefs) )
+          val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs, trefs) )
         end
         val
       when 0x51 # reference to map/list/object - integer ('Q')
@@ -164,7 +164,6 @@ module Hessian2
             val[f] = parse_bytes(bytes, refs, cdefs)
           end
         end
-        puts "parse #{refs.inspect}"
         val
       when 0x70..0x77 # fixed list with direct length
         parse_string(bytes) # skip type
