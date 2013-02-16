@@ -254,10 +254,6 @@ module Hessian2
     end
 
     def write_class_wrapped_array(arr, tstr, cstr, fields, refs = {}, crefs = {}, trefs = {})
-      # idx = refs[arr.object_id]
-      # return write_ref(idx) if idx
-
-      # refs[arr.object_id] = refs.size
       len = arr.size
       if len <= LIST_DIRECT_MAX # [x70-77] type value*
         str = [ BC_LIST_DIRECT + len ].pack('C') << tstr
@@ -297,10 +293,6 @@ module Hessian2
     end
 
     def write_class_wrapped_hash(hash, cstr, fields, refs = {}, crefs = {}, trefs = {})
-      # idx = refs[hash.object_id]
-      # return write_ref(idx) if idx
-
-      # refs[hash.object_id] = refs.size
       str = cstr
       fields.each do |f|
         str << write(hash[f], refs, crefs, trefs)
@@ -310,10 +302,6 @@ module Hessian2
     end
 
     def write_class_wrapped_object(obj, cstr, fields, refs = {}, crefs = {}, trefs = {})
-      # idx = refs[obj.object_id]
-      # return write_ref(idx) if idx
-
-      # refs[obj.object_id] = refs.size
       str = cstr
       fields.each do |f|
         str << write(obj.instance_variable_get(f), refs, crefs, trefs)
@@ -429,10 +417,6 @@ module Hessian2
     end
 
     def write_type_wrapped_array(arr, tstr, eletype, refs = {}, crefs = {}, trefs = {})
-      # idx = refs[arr.object_id]
-      # return write_ref(idx) if idx
-
-      # refs[arr.object_id] = refs.size
       len = arr.size
       return [ BC_LIST_DIRECT ].pack('C') << tstr if len == 0
 
@@ -483,10 +467,6 @@ module Hessian2
     end
 
     def write_type_wrapped_hash(hash, tstr, refs = {}, crefs = {}, trefs = {})
-      # idx = refs[hash.object_id]
-      # return write_ref(idx) if idx
-
-      # refs[hash.object_id] = refs.size
       str = [ BC_MAP ].pack('C') << tstr
       hash.each do |k, v|
         str << write(k, refs, crefs, trefs)

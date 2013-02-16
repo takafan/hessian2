@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-require 'yajl'
 require File.expand_path('../monkey',  __FILE__)
 
 data = IO.binread('hashes.marshal.data')
