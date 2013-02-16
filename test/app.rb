@@ -11,11 +11,13 @@ get '/' do
 end
 
 post '/monkey' do
-  begin
-    status 200
-    MonkeyService.handle(request.body.read)
-  rescue NoMethodError, ArgumentError, NameError => e
-    status 500
-    Hessian2.write_fault(e)
-  end
+  # begin
+  #   status 200
+  #   MonkeyService.handle(request.body.read)
+  # rescue NoMethodError, ArgumentError, NameError => e
+  #   status 500
+  #   Hessian2.write_fault(e)
+  # end
+  status 200
+  MonkeyService.handle(request.body.read)
 end

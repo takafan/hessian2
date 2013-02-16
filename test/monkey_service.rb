@@ -163,6 +163,10 @@ class MonkeyService
   def self.get_monkey
     Monkey.new(name: '阿门', age: 7)
   end
+
+  def self.get_class_wrapped_monkey
+    Hessian2::ClassWrapper.new('Monkey', {name: '阿门', age: 7})
+  end
   
   def self.set_monkey(monkey1)
     print_assert 'set_monkey', monkey1.name == '阿门' && monkey1.age == 7
@@ -341,6 +345,15 @@ class MonkeyService
   # 0x4f # object instance ('O')
   def self.get_monkeys
     [ Monkey.new(name: '阿门', age: 7), Monkey.new(name: '大鸡', age: 6) ]
+  end
+
+  def self.get_class_wrapped_monkeys
+    Hessian2::ClassWrapper.new('[Monkey', [ {name: '阿门', age: 7}, {name: '大鸡', age: 6} ])
+  end
+
+  def self.get_each_class_wrapped_monkeys
+    [ Hessian2::ClassWrapper.new('Monkey',{name: '阿门', age: 7}), 
+      Hessian2::ClassWrapper.new('Monkey',{name: '大鸡', age: 6}) ]
   end
   
   def self.set_monkeys(monkeys)

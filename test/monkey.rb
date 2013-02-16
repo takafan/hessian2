@@ -157,4 +157,8 @@ class Monkey
     
   end
 
+  def [](k)
+    self.instance_variable_get("@#{k.to_s}")
+  end
+
 end

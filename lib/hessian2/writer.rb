@@ -10,6 +10,7 @@ module Hessian2
       out << write_string(method)
       out << write_int(args.size)
       args.each { |arg| out << write(arg, refs, crefs, trefs) }
+
       out
     end
 
@@ -39,7 +40,6 @@ module Hessian2
             trefs[type] = trefs.size # store a type
             tstr = write_string(type)
           end
-
           return [ BC_LIST_DIRECT ].pack('C') << tstr if obj.size == 0
         end
 
@@ -50,9 +50,6 @@ module Hessian2
           fields = cref.last
           str = ''
         else
-          fields = []
-          cref = crefs[klass] = [crefs.size, fields] # store a class definition
-          cidx = cref.first
           fstr = ''
           if obj.is_a? Array
             sample = obj.first
@@ -80,6 +77,8 @@ module Hessian2
           end
 
           str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(fields.size) << fstr
+          cidx = crefs.size
+          crefs[klass] = [cidx, fields] # store a class definition
         end
 
         if cidx <= OBJECT_DIRECT_MAX
@@ -102,13 +101,14 @@ module Hessian2
         return write_nil if obj.nil?
 
         type = val.hessian_type
-        if obj.is_a? Array 
-          if trefs.include?(type)
-            tstr = write_int(trefs[type])
-          else
-            trefs[type] = trefs.size
-            tstr = write_string(type)
-          end
+        if trefs.include?(type)
+          tstr = write_int(trefs[type])
+        else
+          trefs[type] = trefs.size
+          tstr = write_string(type)
+        end
+
+        if obj.is_a? Array
           write_type_wrapped_array(obj, tstr, type.delete('[]'), refs, crefs, trefs)
         else
           case type
@@ -142,11 +142,13 @@ module Hessian2
           return [ BC_DOUBLE, Float::NAN ].pack('CG') if val.nan?
           return [ BC_DOUBLE_ZERO ].pack('C') if val.zero? # double zero
           return [ BC_DOUBLE_ONE ].pack('C') if val == 1 # double one
+
           ival = val.to_i
           if ival == val
             return [ BC_DOUBLE_BYTE, ival ].pack('Cc') if (-0x80..0x7f).include?(ival) # double octet
             return [ BC_DOUBLE_SHORT, (ival >> 8), ival ].pack('Ccc') if (-0x8000..0x7fff).include?(ival) # double short
           end
+
           mval = val * 1000
           if mval.finite?
             mills = mval.to_i
@@ -154,6 +156,7 @@ module Hessian2
               [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
             end
           end
+
           [ BC_DOUBLE, val ].pack('CG') # double
         end
       when Fixnum
@@ -194,6 +197,7 @@ module Hessian2
         end
         i += 1
       end
+
       arr.pack('C*')
     end
 
@@ -209,7 +213,7 @@ module Hessian2
         str = [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
       end
 
-      if arr.first.is_a? == Hash
+      if arr.first.is_a? Hash
         arr.each do |ele|
           idx = refs[ele.object_id]
           if idx
@@ -285,6 +289,7 @@ module Hessian2
       else  # x58 int value*
         str = [ BC_LIST_FIXED_UNTYPED ].pack('C') << write_int(len)
       end
+
       arr.each do |ele|
         str << write(ele, refs, crefs, trefs)
       end
@@ -298,6 +303,7 @@ module Hessian2
         chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << str[i...(i += 0x8000)]
         len -= 0x8000
       end
+
       final = str[i..-1]
       if len <= BINARY_DIRECT_MAX
         chunks << [ BC_BINARY_DIRECT + len ].pack('C') << final
@@ -306,6 +312,7 @@ module Hessian2
       else
         chunks << [ BC_BINARY, len ].pack('Cn') << final
       end
+
       chunks.join
     end
 
@@ -402,21 +409,21 @@ module Hessian2
       return write_ref(idx) if idx
       refs[obj.object_id] = refs.size
 
-      klass = obj.class
+      klass = obj.class.to_s
       cref = crefs[klass]
       if cref
         cidx = cref.first
         fields = cref.last
         str = ''
       else
-        fields = []
-        cref = crefs[klass] = [crefs.size, fields]
-        cidx = cref.first
         fields = obj.instance_variables
         str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(fields.size)
         fields.map{|sym| sym.to_s[1..-1]}.each do |f|
           str << write_string(f)
         end
+
+        cidx = crefs.size
+        crefs[klass] = [cidx, fields]
       end
       
       if cidx <= OBJECT_DIRECT_MAX
@@ -424,6 +431,7 @@ module Hessian2
       else
         str << [ BC_OBJECT ].pack('C') << write_int(cidx)
       end
+
       fields.each do |f|
         str << write(obj.instance_variable_get(f), refs, crefs, trefs)
       end
@@ -441,6 +449,7 @@ module Hessian2
         chunks << [ BC_STRING_CHUNK, 0x8000 ].pack('Cn') << print_string(str[i, i += 0x8000])
         len -= 0x8000
       end
+
       final = str[i..-1]
       chunks << if len <= STRING_DIRECT_MAX
         [ BC_STRING_DIRECT + len ].pack('C')
@@ -449,6 +458,7 @@ module Hessian2
       else
         [ BC_STRING, len ].pack('Cn')
       end
+
       chunks << print_string(final)
     end
 

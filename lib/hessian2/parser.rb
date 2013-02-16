@@ -12,6 +12,7 @@ module Hessian2
         2.times{ bytes.next }
         bc = bytes.next
       end
+
       case bc
       when 0x43 # rpc call ('C')
         method = parse_string(bytes)
@@ -63,13 +64,28 @@ module Hessian2
             modname = m.capitalize.to_sym
             mod = mod.const_defined?(modname) ? mod.const_get(modname) : mod.const_set(modname, Module.new)
           end
-          klass = mod.const_defined?(classname) ? mod.const_get(classname) : mod.const_set(classname, Class.new)
         else
-          klass = Object.const_defined?(classname) ? Object.const_get(classname) : Object.const_set(classname, Class.new)
+          mod = Object
         end
-        attrs = []
-        cdefs << [klass, attrs] # store a class reference
-        parse_int(bytes).times{ attrs << parse_string(bytes) }
+
+        fields = []
+        if mod.const_defined?(classname)
+          klass = mod.const_get(classname)
+          parse_int(bytes).times do
+            fields << parse_string(bytes)
+          end
+        else
+          klass = mod.const_set(classname, Class.new)
+          parse_int(bytes).times do
+            field = parse_string(bytes)
+            klass.send(:define_method, field, proc{self.instance_variable_get("@#{field}")})
+            klass.send(:define_method, "#{field}=", proc{|v| self.instance_variable_set("@#{field}", v)})
+            fields << field
+          end
+          klass.send(:define_method, '[]', proc{|k| self.instance_variable_get("@#{k.to_s}")})
+        end
+
+        cdefs << [klass, fields] # store a class reference
         parse_bytes(bytes, refs, cdefs)
       when 0x44 # 64-bit IEEE encoded double ('D')
         read_double(bytes)
@@ -81,6 +97,7 @@ module Hessian2
         while bytes.peek != BC_END
           val[parse_bytes(bytes, refs, cdefs)] = parse_bytes(bytes, refs, cdefs)
         end
+
         bytes.next
         val
       when 0x49 # 32-bit signed integer ('I')
@@ -98,6 +115,7 @@ module Hessian2
         while bytes.peek != BC_END
           val[parse_bytes(bytes, refs, cdefs)] = parse_bytes(bytes, refs, cdefs)
         end
+
         bytes.next
         val
       when 0x4e # null ('N')
@@ -107,8 +125,13 @@ module Hessian2
         val = cdef.first.new
         refs << val # store a value reference first
         cdef.last.each do |f|
-          val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs) )
+          if val.respond_to?("#{f}=")
+            val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs))
+          else
+            parse_bytes(bytes, refs, cdefs)
+          end
         end
+
         val
       when 0x51 # reference to map/list/object - integer ('Q')
         refs[parse_int(bytes)]
@@ -125,6 +148,7 @@ module Hessian2
         while bytes.peek != BC_END
           val << parse_bytes(bytes, refs, cdefs)
         end
+
         bytes.next
         val
       when 0x56 # fixed-length list/vector ('V')
@@ -141,6 +165,7 @@ module Hessian2
         while bytes.peek != BC_END
           val << parse_bytes(bytes, refs, cdefs)
         end
+
         bytes.next
         val
       when 0x58 # fixed-length untyped list/vector ('X')
@@ -149,6 +174,7 @@ module Hessian2
         parse_int(bytes).times do
           val << parse_bytes(bytes, refs, cdefs)
         end
+
         val
       when 0x59 # long encoded as 32-bit int ('Y')
         read_int(bytes)
@@ -164,19 +190,16 @@ module Hessian2
         read_double_mill(bytes)
       when 0x60..0x6f # object with direct type
         cdef = cdefs[bc - BC_OBJECT_DIRECT]
-        if Object.const_defined?(cdef.first)
-          val = Object.const_get(cdef.first).new
-          refs << val # store a value reference first
-          cdef.last.each do |f|
-            val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs) )
-          end
-        else
-          val = {}
-          refs << val # store a value reference first
-          cdef.last.each do |f|
-            val[f] = parse_bytes(bytes, refs, cdefs)
+        val = cdef.first.new
+        refs << val # store a value reference first
+        cdef.last.each do |f|
+          if val.respond_to?("#{f}=")
+            val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs))
+          else
+            parse_bytes(bytes, refs, cdefs)
           end
         end
+
         val
       when 0x70..0x77 # fixed list with direct length
         parse_string(bytes) # skip type
@@ -185,6 +208,7 @@ module Hessian2
         (bc - BC_LIST_DIRECT).times do
           val << parse_bytes(bytes, refs, cdefs)
         end
+
         val
       when 0x78..0x7f # fixed untyped list with direct length
         val = []
@@ -192,6 +216,7 @@ module Hessian2
         (bc - BC_LIST_DIRECT_UNTYPED).times do
           val << parse_bytes(bytes, refs, cdefs)
         end
+
         val
       when 0x80..0xbf # one-octet compact int (-x10 to x2f, x90 is 0)
         read_int_zero(bc)
@@ -286,6 +311,7 @@ module Hessian2
         bytes.next
         chunks << read_binary(bytes)
       end
+
       chunks << parse_binary(bytes)
       chunks.join
     end
@@ -393,10 +419,12 @@ module Hessian2
           send(:define_method, sks[i], proc{|v| instance_variable_set(qk, v)} )
         end
       end
+
       obj = Object.const_set(klass_name, klass).new
       qks.each_with_index do |qk, i|
         obj.instance_variable_set(qk, vs[i])
       end
+
       obj
     end
 
@@ -415,6 +443,7 @@ module Hessian2
         bytes.next
         chunks << read_string(bytes)
       end
+      
       chunks << parse_string(bytes)
       chunks.join
     end
