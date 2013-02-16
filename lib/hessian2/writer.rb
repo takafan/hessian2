@@ -28,14 +28,10 @@ module Hessian2
     def write(val, refs = {}, crefs = {}, trefs = {})
       case val
       when ClassWrapper # hash as monkey; monkey as example.monkey; [hash as [monkey; [monkey as [example.monkey
-        # idx = refs[val.object_id]
-        # return write_ref(idx) if idx
-
         obj = val.object
         return write_nil if obj.nil?
-        # refs[val.object_id] = refs.size # store a value reference
 
-        if obj.class == Array 
+        if obj.is_a? Array
           type = val.hessian_class
           if trefs.include?(type)
             tstr = write_int(trefs[type])
@@ -58,9 +54,9 @@ module Hessian2
           cref = crefs[klass] = [crefs.size, fields] # store a class definition
           cidx = cref.first
           fstr = ''
-          if obj.class == Array
+          if obj.is_a? Array
             sample = obj.first
-            if sample.class == Hash
+            if sample.is_a? Hash
               fields = sample.keys
               fields.each do |f|
                 fstr << write_string(f.to_s)
@@ -71,7 +67,7 @@ module Hessian2
                 fstr << write_string(f.to_s[1..-1]) # skip '@'
               end
             end
-          elsif obj.class == Hash
+          elsif obj.is_a? Hash
             fields = obj.keys
             fields.each do |f|
               fstr << write_string(f.to_s)
@@ -92,9 +88,9 @@ module Hessian2
           cstr = [ BC_OBJECT ].pack('C') << write_int(cidx)
         end
 
-        if obj.class == Array
+        if obj.is_a? Array
           str << write_class_wrapped_array(obj, tstr, cstr, fields, refs, crefs, trefs)
-        elsif obj.class == Hash
+        elsif obj.is_a? Hash
           str << write_class_wrapped_hash(obj, cstr, fields, refs, crefs, trefs)
         else
           str << write_class_wrapped_object(obj, cstr, fields, refs, crefs, trefs)
@@ -102,15 +98,11 @@ module Hessian2
 
         str
       when TypeWrapper
-        # idx = refs[val.object_id]
-        # return write_ref(idx) if idx
-
         obj = val.object
         return write_nil if obj.nil?
-        # refs[val.object_id] = refs.size
 
         type = val.hessian_type
-        if obj.class == Array 
+        if obj.is_a? Array 
           if trefs.include?(type)
             tstr = write_int(trefs[type])
           else
@@ -217,7 +209,7 @@ module Hessian2
         str = [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
       end
 
-      if arr.first.class == Hash
+      if arr.first.is_a? == Hash
         arr.each do |ele|
           idx = refs[ele.object_id]
           if idx

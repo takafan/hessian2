@@ -152,7 +152,9 @@ class Monkey
   end
 
   def initialize(attrs = {})
-    attrs.each { |key, val| send("#{key}=", val) if respond_to?("#{key}=") }
+    attrs.each { |k, v| send("#{k}=", v) if respond_to?("#{k}=") }
+    # attrs.each { |k, v| instance_variable_set("@#{k}", v) if respond_to?("@#{k}") }
+    
   end
 
 end

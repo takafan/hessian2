@@ -15,9 +15,9 @@ module Hessian2
       case bc
       when 0x43 # rpc call ('C')
         method = parse_string(bytes)
-        refs, cdefs, trefs = [], [], []
+        refs, cdefs = [], []
         args = [].tap do |arr|
-          parse_int(bytes).times{ arr << parse_bytes(bytes, refs, cdefs, trefs) }
+          parse_int(bytes).times{ arr << parse_bytes(bytes, refs, cdefs) }
         end
         [ method, *args ]
       when 0x46 # fault ('F')
@@ -35,7 +35,7 @@ module Hessian2
       parse_bytes(data.bytes)
     end
 
-    def parse_bytes(bytes, refs = [], cdefs = [], trefs = [], type = nil)
+    def parse_bytes(bytes, refs = [], cdefs = [])
       bc = bytes.next
       case bc
       when 0x00..0x1f # utf-8 string length 0-31
@@ -53,20 +53,33 @@ module Hessian2
       when 0x42 # 8-bit binary data final chunk ('B')
         read_binary(bytes)
       when 0x43 # object type definition ('C')
+        name = parse_string(bytes)
+        mods = name.split(/\.|::/)
+        classname = mods.pop.capitalize.to_sym
+        if mods.size > 0
+          modname = mods.shift.capitalize.to_sym
+          mod = Object.const_defined?(modname) ? Object.const_get(modname) : Object.const_set(modname, Module.new)
+          mods.each do |m|
+            modname = m.capitalize.to_sym
+            mod = mod.const_defined?(modname) ? mod.const_get(modname) : mod.const_set(modname, Module.new)
+          end
+          klass = mod.const_defined?(classname) ? mod.const_get(classname) : mod.const_set(classname, Class.new)
+        else
+          klass = Object.const_defined?(classname) ? Object.const_get(classname) : Object.const_set(classname, Class.new)
+        end
         attrs = []
-        cdefs << [parse_string(bytes), attrs]
-        parse_int(bytes).times{ attrs << parse_string(bytes) } # store a class reference
-        parse_bytes(bytes, refs, cdefs, trefs, type)
+        cdefs << [klass, attrs] # store a class reference
+        parse_int(bytes).times{ attrs << parse_string(bytes) }
+        parse_bytes(bytes, refs, cdefs)
       when 0x44 # 64-bit IEEE encoded double ('D')
         read_double(bytes)
       when 0x46 # boolean false ('F')
         false
       when 0x48 # untyped map ('H')
-        # if type
         val = {}
         refs << val # store a value reference first
         while bytes.peek != BC_END
-          val[parse_bytes(bytes, refs, cdefs, trefs)] = parse_bytes(bytes, refs, cdefs, trefs)
+          val[parse_bytes(bytes, refs, cdefs)] = parse_bytes(bytes, refs, cdefs)
         end
         bytes.next
         val
@@ -79,22 +92,22 @@ module Hessian2
       when 0x4c # 64-bit signed long integer ('L')
         read_long(bytes)
       when 0x4d # map with type ('M')
-        val = Object.const_get(parse_string(bytes)).new
-        refs << val # store a value reference first
+        parse_string(bytes) # skip type
+        val = {}
+        refs << val
         while bytes.peek != BC_END
-          val.instance_variable_set('@' + parse_bytes(bytes, refs, cdefs, trefs), parse_bytes(bytes, refs, cdefs, trefs) )
+          val[parse_bytes(bytes, refs, cdefs)] = parse_bytes(bytes, refs, cdefs)
         end
         bytes.next
         val
       when 0x4e # null ('N')
         nil
       when 0x4f # object instance ('O')
-        # if type
         cdef = cdefs[parse_int(bytes)]
-        val = Object.const_get(cdef.first).new
+        val = cdef.first.new
         refs << val # store a value reference first
         cdef.last.each do |f|
-          val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs, trefs) )
+          val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs) )
         end
         val
       when 0x51 # reference to map/list/object - integer ('Q')
@@ -110,7 +123,7 @@ module Hessian2
         val = []
         refs << val # store a value reference first
         while bytes.peek != BC_END
-          val << parse_bytes(bytes, refs, cdefs, trefs)
+          val << parse_bytes(bytes, refs, cdefs)
         end
         bytes.next
         val
