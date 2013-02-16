@@ -330,7 +330,7 @@ class MonkeyService
   end
 
   def self.set_map(map1)
-    print_assert 'set_map', map1.name == '阿门' && map1.age == 7
+    print_assert 'set_map', map1['name'] == '阿门' && map1['age'] == 7
   end
   
   # 0x4e # null ('N')
@@ -464,6 +464,7 @@ class MonkeyService
   end
   
   def self.set_list(list1)
+    puts list1.inspect
     print_assert 'set_list', list1.size == 14 && list1[0] == 1
   end
 
@@ -600,6 +601,10 @@ class MonkeyService
   
   def self.set_list_size7(list1)
     print_assert 'set_list_size7', list1.size == 7 && list1[0] == 1
+  end
+
+  def self.set_list_monkey_size7(list1)
+    print_assert 'set_list_monkey_size7', list1.size == 7 && list1.last.name == '阿门' && list1.last.age == 7
   end
   
   # 0x80..0xbf # one-octet compact int (-x10 to x2f, x90 is 0)

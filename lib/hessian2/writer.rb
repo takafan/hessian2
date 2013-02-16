@@ -32,6 +32,11 @@ module Hessian2
         obj = val.object
         return write_nil if obj.nil?
 
+        idx = refs[val.object_id]
+        return write_ref(idx) if idx
+
+        refs[val.object_id] = refs.size
+
         if obj.is_a? Array
           type = val.hessian_class
           if trefs.include?(type)
@@ -100,6 +105,11 @@ module Hessian2
         obj = val.object
         return write_nil if obj.nil?
 
+        idx = refs[val.object_id]
+        return write_ref(idx) if idx
+
+        refs[val.object_id] = refs.size
+
         type = val.hessian_type
         if trefs.include?(type)
           tstr = write_int(trefs[type])
@@ -119,7 +129,11 @@ module Hessian2
           when 'B', 'b'
             write_binary(obj)
           else
-            write_type_wrapped_hash(obj, tstr, refs, crefs, trefs)
+            if obj.is_a? Hash
+              write_type_wrapped_hash(obj, tstr, refs, crefs, trefs)
+            else
+              write(obj, refs, crefs, trefs)
+            end
           end
         end
       when TrueClass
@@ -153,7 +167,7 @@ module Hessian2
           if mval.finite?
             mills = mval.to_i
             if (-0x80_000_000..0x7f_fff_fff).include?(mills) and 0.001 * mills == val
-              [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
+              return [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
             end
           end
 
@@ -201,11 +215,49 @@ module Hessian2
       arr.pack('C*')
     end
 
-    def write_class_wrapped_array(arr, tstr, cstr, fields, refs = {}, crefs = {}, trefs = {})
+    def write_array(arr, refs = {}, crefs = {}, trefs = {})
       idx = refs[arr.object_id]
       return write_ref(idx) if idx
-      refs[arr.object_id] = refs.size
 
+      refs[arr.object_id] = refs.size
+      len = arr.size
+      if len <= LIST_DIRECT_MAX # [x78-7f] value*
+        str = [ BC_LIST_DIRECT_UNTYPED + len ].pack('C')
+      else  # x58 int value*
+        str = [ BC_LIST_FIXED_UNTYPED ].pack('C') << write_int(len)
+      end
+
+      arr.each do |ele|
+        str << write(ele, refs, crefs, trefs)
+      end
+
+      str
+    end
+
+    def write_binary(str)
+      chunks, i, len = [], 0, str.size
+      while len > 0x8000
+        chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << str[i...(i += 0x8000)]
+        len -= 0x8000
+      end
+
+      final = str[i..-1]
+      if len <= BINARY_DIRECT_MAX
+        chunks << [ BC_BINARY_DIRECT + len ].pack('C') << final
+      elsif len <= BINARY_SHORT_MAX
+        chunks << [ BC_BINARY_SHORT + (len >> 8), len ].pack('CC') << final
+      else
+        chunks << [ BC_BINARY, len ].pack('Cn') << final
+      end
+
+      chunks.join
+    end
+
+    def write_class_wrapped_array(arr, tstr, cstr, fields, refs = {}, crefs = {}, trefs = {})
+      # idx = refs[arr.object_id]
+      # return write_ref(idx) if idx
+
+      # refs[arr.object_id] = refs.size
       len = arr.size
       if len <= LIST_DIRECT_MAX # [x70-77] type value*
         str = [ BC_LIST_DIRECT + len ].pack('C') << tstr
@@ -244,83 +296,11 @@ module Hessian2
       str
     end
 
-    def write_type_wrapped_array(arr, tstr, eletype, refs = {}, crefs = {}, trefs = {})
-      idx = refs[arr.object_id]
-      return write_ref(idx) if idx
-      refs[arr.object_id] = refs.size
-
-      len = arr.size
-      if len <= LIST_DIRECT_MAX # [x70-77] type value*
-        str = [ BC_LIST_DIRECT + len ].pack('C') << tstr
-      else  # 'V' type int value*
-        str = [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
-      end
-
-      case eletype
-      when 'L', 'Long', 'long'
-        arr.each do |ele|
-          str << write_long(Integer(ele))
-        end
-      when 'I', 'Integer', 'int'
-        arr.each do |ele|
-          str << write_int(Integer(ele))
-        end
-      when 'B', 'b'
-        arr.each do |ele|
-          str << write_binary(ele)
-        end
-      else
-        arr.each do |ele|
-          str << write_type_wrapped_hash(ele, tstr, refs, crefs, trefs)
-        end
-      end
-      
-      str
-    end
-
-    def write_array(arr, refs = {}, crefs = {}, trefs = {})
-      idx = refs[arr.object_id]
-      return write_ref(idx) if idx
-      refs[arr.object_id] = refs.size
-
-      len = arr.size
-      if len <= LIST_DIRECT_MAX # [x78-7f] value*
-        str = [ BC_LIST_DIRECT_UNTYPED + len ].pack('C')
-      else  # x58 int value*
-        str = [ BC_LIST_FIXED_UNTYPED ].pack('C') << write_int(len)
-      end
-
-      arr.each do |ele|
-        str << write(ele, refs, crefs, trefs)
-      end
-
-      str
-    end
-
-    def write_binary(str)
-      chunks, i, len = [], 0, str.size
-      while len > 0x8000
-        chunks << [ BC_BINARY_CHUNK, 0x8000 ].pack('Cn') << str[i...(i += 0x8000)]
-        len -= 0x8000
-      end
-
-      final = str[i..-1]
-      if len <= BINARY_DIRECT_MAX
-        chunks << [ BC_BINARY_DIRECT + len ].pack('C') << final
-      elsif len <= BINARY_SHORT_MAX
-        chunks << [ BC_BINARY_SHORT + (len >> 8), len ].pack('CC') << final
-      else
-        chunks << [ BC_BINARY, len ].pack('Cn') << final
-      end
-
-      chunks.join
-    end
-
     def write_class_wrapped_hash(hash, cstr, fields, refs = {}, crefs = {}, trefs = {})
-      idx = refs[hash.object_id]
-      return write_ref(idx) if idx
-      refs[hash.object_id] = refs.size
+      # idx = refs[hash.object_id]
+      # return write_ref(idx) if idx
 
+      # refs[hash.object_id] = refs.size
       str = cstr
       fields.each do |f|
         str << write(hash[f], refs, crefs, trefs)
@@ -329,25 +309,24 @@ module Hessian2
       str
     end
 
-    def write_type_wrapped_hash(hash, tstr, refs = {}, crefs = {}, trefs = {})
-      idx = refs[hash.object_id]
-      return write_ref(idx) if idx
-      refs[hash.object_id] = refs.size
+    def write_class_wrapped_object(obj, cstr, fields, refs = {}, crefs = {}, trefs = {})
+      # idx = refs[obj.object_id]
+      # return write_ref(idx) if idx
 
-      str = [ BC_MAP ].pack('C') << tstr
-      hash.each do |k, v|
-        str << write(k, refs, crefs, trefs)
-        str << write(v, refs, crefs, trefs)
+      # refs[obj.object_id] = refs.size
+      str = cstr
+      fields.each do |f|
+        str << write(obj.instance_variable_get(f), refs, crefs, trefs)
       end
 
-      str << [ BC_END ].pack('C')
+      str
     end
 
     def write_hash(hash, refs = {}, crefs = {}, trefs = {})
       idx = refs[hash.object_id]
       return write_ref(idx) if idx
-      refs[hash.object_id] = refs.size
 
+      refs[hash.object_id] = refs.size
       str = [ BC_MAP_UNTYPED ].pack('C')
       hash.each do |k, v|
         str << write(k, refs, crefs, trefs)
@@ -391,24 +370,11 @@ module Hessian2
       [ BC_NULL ].pack('C')
     end
 
-    def write_class_wrapped_object(obj, cstr, fields, refs = {}, crefs = {}, trefs = {})
-      idx = refs[obj.object_id]
-      return write_ref(idx) if idx
-      refs[obj.object_id] = refs.size
-
-      str = cstr
-      fields.each do |f|
-        str << write(obj.instance_variable_get(f), refs, crefs, trefs)
-      end
-
-      str
-    end
-
     def write_object(obj, refs = {}, crefs = {}, trefs = {})
       idx = refs[obj.object_id]
       return write_ref(idx) if idx
-      refs[obj.object_id] = refs.size
 
+      refs[obj.object_id] = refs.size
       klass = obj.class.to_s
       cref = crefs[klass]
       if cref
@@ -460,6 +426,74 @@ module Hessian2
       end
 
       chunks << print_string(final)
+    end
+
+    def write_type_wrapped_array(arr, tstr, eletype, refs = {}, crefs = {}, trefs = {})
+      # idx = refs[arr.object_id]
+      # return write_ref(idx) if idx
+
+      # refs[arr.object_id] = refs.size
+      len = arr.size
+      return [ BC_LIST_DIRECT ].pack('C') << tstr if len == 0
+
+      if len <= LIST_DIRECT_MAX # [x70-77] type value*
+        str = [ BC_LIST_DIRECT + len ].pack('C') << tstr
+      else  # 'V' type int value*
+        str = [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
+      end
+
+      case eletype
+      when 'L', 'Long', 'long'
+        arr.each do |ele|
+          str << write_long(Integer(ele))
+        end
+      when 'I', 'Integer', 'int'
+        arr.each do |ele|
+          str << write_int(Integer(ele))
+        end
+      when 'B', 'b'
+        arr.each do |ele|
+          str << write_binary(ele)
+        end
+      else
+        if arr.first.is_a? Hash
+          arr.each do |ele|
+            idx = refs[ele.object_id]
+            if idx
+              str << write_ref(idx)
+            else
+              refs[ele.object_id] = refs.size
+              str << write_type_wrapped_hash(ele, tstr, refs, crefs, trefs)
+            end
+          end
+        else
+          arr.each do |ele|
+            idx = refs[ele.object_id]
+            if idx
+              str << write_ref(idx)
+            else
+              refs[ele.object_id] = refs.size
+              str << write(ele, refs, crefs, trefs)
+            end
+          end
+        end
+      end
+      
+      str
+    end
+
+    def write_type_wrapped_hash(hash, tstr, refs = {}, crefs = {}, trefs = {})
+      # idx = refs[hash.object_id]
+      # return write_ref(idx) if idx
+
+      # refs[hash.object_id] = refs.size
+      str = [ BC_MAP ].pack('C') << tstr
+      hash.each do |k, v|
+        str << write(k, refs, crefs, trefs)
+        str << write(v, refs, crefs, trefs)
+      end
+
+      str << [ BC_END ].pack('C')
     end
 
   end

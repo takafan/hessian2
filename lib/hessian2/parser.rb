@@ -82,6 +82,7 @@ module Hessian2
             klass.send(:define_method, "#{field}=", proc{|v| self.instance_variable_set("@#{field}", v)})
             fields << field
           end
+
           klass.send(:define_method, '[]', proc{|k| self.instance_variable_get("@#{k.to_s}")})
         end
 
@@ -109,7 +110,7 @@ module Hessian2
       when 0x4c # 64-bit signed long integer ('L')
         read_long(bytes)
       when 0x4d # map with type ('M')
-        parse_string(bytes) # skip type
+        parse_type(bytes) # skip type
         val = {}
         refs << val
         while bytes.peek != BC_END
@@ -142,7 +143,7 @@ module Hessian2
       when 0x54 # boolean true ('T')
         true
       when 0x55 # variable-length list/vector ('U')
-        parse_string(bytes) # skip type
+        parse_type(bytes)
         val = []
         refs << val # store a value reference first
         while bytes.peek != BC_END
@@ -152,12 +153,13 @@ module Hessian2
         bytes.next
         val
       when 0x56 # fixed-length list/vector ('V')
-        parse_string(bytes) # skip type
+        parse_type(bytes)
         val = []
         refs << val # store a value reference
         parse_int(bytes).times do
           val << parse_bytes(bytes, refs, cdefs)
         end
+
         val
       when 0x57 # variable-length untyped list/vector ('W')
         val = []
@@ -202,7 +204,7 @@ module Hessian2
 
         val
       when 0x70..0x77 # fixed list with direct length
-        parse_string(bytes) # skip type
+        parse_type(bytes)
         val = []
         refs << val # store a value reference first
         (bc - BC_LIST_DIRECT).times do
@@ -291,6 +293,30 @@ module Hessian2
         read_string(bytes)
       else
         raise sprintf("%#x is not a string", bc)
+      end
+    end
+
+    def parse_type(bytes)
+      bc = bytes.next
+      case bc
+      when 0x00..0x1f
+        read_string_direct(bytes, bc)
+      when 0x30..0x33
+        read_string_short(bytes, bc)
+      when 0x49
+        read_int(bytes)
+      when 0x52
+        read_string_chunk(bytes)
+      when 0x53
+        read_string(bytes)
+      when 0x80..0xbf
+        read_int_zero(bc)
+      when 0xc0..0xcf
+        read_int_byte_zero(bytes, bc)
+      when 0xd0..0xd7
+        read_int_short_zero(bytes, bc)
+      else
+        raise sprintf("%#x is not a type", bc)
       end
     end
 

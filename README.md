@@ -4,23 +4,33 @@ json encode fast, hessian write small.
 
 hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://hessian.caucho.com/doc/hessian-ws.html] and {serialization protocol}[http://hessian.caucho.com/doc/hessian-serialization.html].
 
-install:
+## comparing
+
+data size after serializing 10_000 monkeys/hashes, and serializing|deserializing spent on my pc:
+
+yajl-ruby: 9.33MB (0.68s|0.81s)
+
+msgpack: 7.65MB (0.14s|0.32s)
+
+marshal: 2.68MB (0.21s|0.14s)
+
+hessian2: 1.11MB (2.44s|4.61s)
+
+## choosing
+
+readable: yajl-ruby
+
+serializing/deserializing efficiently: msgpack
+
+sending objects, but ruby only: marshal
+
+sending objects, saving transfer: hessian2
+
+## install
 
 ```
 gem install hessian2
 ```
-
-## comparing
-
-sending 10_000 monkeys:
-
-yajl-ruby: encode/parse fast, json is readable and popular.
-
-msgpack: pack/unpack most efficiency.
-
-marshal: sending object, dump fast, 1/3 smaller than yajl, load fastest, but it's ruby only.
-
-hessian2: sending object, referencable, serialize field names once then following objects only values, therefore 1/8 smaller than yajl —— saving transfer. write/parse a little slow because it's not c yet.
 
 ## serializing
 
@@ -43,7 +53,7 @@ url = 'http://127.0.0.1:9292/monkey'
 client = Hessian2::Client.new(url)
 ```
 
-### call remote function, send a monkey
+### call remote method, send a monkey
 
 ``` ruby
 monkey = Monkey.new(name: '阿门', age: 7)
@@ -52,7 +62,7 @@ client.send_monkey(monkey)
 
 ## class wrapper
 
-### wrap a hash as a monkey
+### wrap a hash to a monkey
 
 ``` ruby
 hash = {name: '阿门', age: 7}
@@ -68,14 +78,14 @@ monkeys = Hessian2::ClassWrapper.new('[Monkey', arr)
 
 ## type wrapper
 
-### wrap a string as long
+### wrap a string to long
 
 ``` ruby
 str = '-0x8_000_000_000_000_000'
 long = Hessian2::TypeWrapper.new('L', str)
 ```
 
-### wrap a file as binary
+### wrap a file to binary
 
 ``` ruby
 binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
@@ -135,8 +145,6 @@ ruby ./set.rb
 ```
 
 ## todo
-
-classwrapper typewrapper
 
 supports packet+ and envelope+
 

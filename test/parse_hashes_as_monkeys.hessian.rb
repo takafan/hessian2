@@ -4,10 +4,9 @@ $:.unshift(lib_path)
 require 'hessian2'
 require File.expand_path('../monkey',  __FILE__)
 
-hashes = Monkey.generate_hash
-
+data = IO.binread('hashes_as_monkeys.hessian.data')
 t0 = Time.new
-data = Hessian2.write(Hessian2::ClassWrapper.new('[Monkey', hashes))
+monkey = Hessian2.parse(data).last
 puts "#{Time.new - t0}s"
 puts "size: #{data.size}"
-IO.binwrite('hashes_as_monkeys.hessian.data', data)
+puts monkey.inspect

@@ -17,15 +17,11 @@ monkeys = []
 end
 now = Time.new(2013, 1, 12, 14, 59, 59)
 
-# c1.set_list_int(Hessian2::TypeWrapper.new('[int', [1,2,3,4,5,6,7] * 2))
-c1.set_list_monkey(Hessian2::ClassWrapper.new('[Monkey', map1_list * 2))
-# c1.set_list(list1 * 2)
-
-# c1.set_list_size0(Hessian2::TypeWrapper.new('[Monkey', []))
-# c1.set_list_size7(Hessian2::TypeWrapper.new('[Monkey', list1))
+# c1.set_map_list_monkey_map_list_monkey(map1, list1, cmonkey1, map1, list1, cmonkey1)
+# c1.set_list_monkey(Hessian2::ClassWrapper.new('[Monkey', map1_list * 2))
 
 # c1.set_list_size0([])
-# c1.set_list_size7(list1)
+# c1.set_list_monkey_size7(list1)
 
 # 0x00..0x1f # utf-8 string length 0-31
 c1.set_string_0('')
@@ -131,13 +127,13 @@ c1.set_true(true)
 # hessian2 write fixed-length list only
 
 # 0x56 # fixed-length list/vector ('V')
-c1.set_list(Hessian2::TypeWrapper.new('[Monkey', list1 * 2))
+c1.set_list_monkey(Hessian2::ClassWrapper.new('[Monkey', list1 * 2))
 
 # 0x57 # variable-length untyped list/vector ('W')
 # hessian2 write fixed-length list only
 
 # 0x58 # fixed-length untyped list/vector ('X')
-c1.set_list(list1 * 2)
+c1.set_list_monkey(list1 * 2)
 
 # 0x59 # long encoded as 32-bit int ('Y')
 c1.set_long_mx40001(-0x40001)
@@ -165,12 +161,12 @@ c1.set_double_32767(32767.0)
 # hessian2 write double-precision only
 
 # 0x70..0x77 # fixed list with direct length
-c1.set_list_size0(Hessian2::TypeWrapper.new('[Monkey', []))
-c1.set_list_size7(Hessian2::TypeWrapper.new('[Monkey', list1))
+c1.set_list_size0(Hessian2::ClassWrapper.new('[Monkey', []))
+c1.set_list_monkey_size7(Hessian2::ClassWrapper.new('[Monkey', map1))
 
 # 0x78..0x7f # fixed untyped list with direct length
 c1.set_list_size0([])
-c1.set_list_size7(list1)
+c1.set_list_monkey_size7(list1)
 
 # 0x80..0xbf # one-octet compact int (-x10 to x3f, x90 is 0)
 c1.set_int_mx10(-0x10)
