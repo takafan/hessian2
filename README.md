@@ -2,7 +2,7 @@
 
 json encode fast, hessian write small.
 
-hessian2 implements hessian 2.0 protocol. check {web services protocol}[http://hessian.caucho.com/doc/hessian-ws.html] and {serialization protocol}[http://hessian.caucho.com/doc/hessian-serialization.html].
+hessian2 implements hessian 2.0 protocol. check [web services protocol](http://hessian.caucho.com/doc/hessian-ws.html) and [serialization protocol](http://hessian.caucho.com/doc/hessian-serialization.html).
 
 ## comparing
 
@@ -53,7 +53,7 @@ url = 'http://127.0.0.1:9292/monkey'
 client = Hessian2::Client.new(url)
 ```
 
-### call remote method, send a monkey
+call remote method, send a monkey
 
 ``` ruby
 monkey = Monkey.new(name: '阿门', age: 7)
@@ -62,14 +62,14 @@ client.send_monkey(monkey)
 
 ## class wrapper
 
-### wrap a hash to a monkey
+wrap a hash to a monkey
 
 ``` ruby
 hash = {name: '阿门', age: 7}
 monkey = Hessian2::ClassWrapper.new('Monkey', hash)
 ```
 
-### wrap a batch of monkeys
+wrap a batch of monkeys
 
 ``` ruby
 arr = [{name: '阿门', age: 7}, {name: '大鸡', age: 6}]
@@ -78,21 +78,21 @@ monkeys = Hessian2::ClassWrapper.new('[Monkey', arr)
 
 ## type wrapper
 
-### wrap a string to long
+wrap a string to long
 
 ``` ruby
 str = '-0x8_000_000_000_000_000'
 long = Hessian2::TypeWrapper.new('L', str)
 ```
 
-### wrap a file to binary
+wrap a file to binary
 
 ``` ruby
 binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
 file = Hessian2::TypeWrapper.new('B', binstr)
 ```
 
-### wrap a batch of files
+wrap a batch of files
 
 ``` ruby
 arr = [binstr1, binstr2]
@@ -101,7 +101,7 @@ files = Hessian2::TypeWrapper.new('[B', arr))
 
 ## service
 
-### extend hessian handler
+extend hessian handler
 
 ``` ruby
 class MonkeyService
@@ -112,7 +112,7 @@ class MonkeyService
 end
 ```
 
-### handle request in sinatra
+handle request in sinatra
 
 ``` ruby
 post '/monkey' do
@@ -126,19 +126,19 @@ end
 cd test/
 ```
 
-### start a service
+start a service
 
 ```
 rackup -E production
 ```
 
-### test parser
+test parser
 
 ```
 ruby ./get.rb
 ```
 
-### test writer
+test writer
 
 ```
 ruby ./set.rb
@@ -146,7 +146,7 @@ ruby ./set.rb
 
 ## todo
 
-supports packet+ and envelope+
+supports packet and envelope
 
 rsa aes encryption
 
@@ -158,4 +158,4 @@ write in c
 
 ## license
 
-MIT
+[Ruby License](http://www.ruby-lang.org/en/LICENSE.txt)
