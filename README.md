@@ -8,13 +8,13 @@ hessian2 implements hessian 2.0 protocol. check [web services protocol](http://h
 
 data size after serializing 10_000 monkeys/hashes, and serializing|deserializing spent on my pc:
 
-yajl-ruby: 9.33MB (0.68s|0.81s)
+yajl-ruby: 9.33MB (0.28s|0.44s)
 
-msgpack: 7.65MB (0.14s|0.32s)
+msgpack: 7.65MB (0.04s|0.17s)
 
-marshal: 2.68MB (0.21s|0.14s)
+marshal: 2.68MB (0.12s|0.07s)
 
-hessian2: 1.11MB (2.44s|4.61s)
+hessian2: 1.11MB (1.21s|3.13s)
 
 ## choosing
 
