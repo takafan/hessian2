@@ -6,7 +6,7 @@ module Hessian2
     include Constants
 
     def parse_rpc(data)
-      bytes = data.bytes
+      bytes = data.each_byte
       bc = bytes.next
       if bc == 0x48 # skip hessian version
         2.times{ bytes.next }
@@ -33,7 +33,7 @@ module Hessian2
     end
 
     def parse(data)
-      parse_bytes(data.bytes)
+      parse_bytes(data.each_byte)
     end
 
     def parse_bytes(bytes, refs = [], cdefs = [])
