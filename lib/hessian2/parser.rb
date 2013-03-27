@@ -451,24 +451,6 @@ module Hessian2
       ((bc - BC_LONG_SHORT_ZERO) << 16) + (bytes.next << 8) + bytes.next
     end
 
-    def read_object(bytes, klass_name, ks, vs)
-      qks = ks.map{|k| '@' << k }
-      sks = ks.map{|k| k << '=' }
-      klass = Class.new do
-        qks.each_with_index do |qk, i|
-          send(:define_method, ks[i], proc{instance_variable_get(qk)} )
-          send(:define_method, sks[i], proc{|v| instance_variable_set(qk, v)} )
-        end
-      end
-
-      obj = Object.const_set(klass_name, klass).new
-      qks.each_with_index do |qk, i|
-        obj.instance_variable_set(qk, vs[i])
-      end
-
-      obj
-    end
-
     def read_string_direct(bytes, bc)
       read_utf8_string(bytes, bc - BC_STRING_DIRECT)
     end
