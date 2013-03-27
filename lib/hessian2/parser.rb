@@ -55,38 +55,43 @@ module Hessian2
         read_binary(bytes)
       when 0x43 # object type definition ('C')
         name = parse_string(bytes)
-        mods = name.split(/\.|::/)
-        classname = mods.pop.capitalize.to_sym
-        if mods.size > 0
-          modname = mods.shift.capitalize.to_sym
-          mod = Object.const_defined?(modname) ? Object.const_get(modname) : Object.const_set(modname, Module.new)
-          mods.each do |m|
-            modname = m.capitalize.to_sym
-            mod = mod.const_defined?(modname) ? mod.const_get(modname) : mod.const_set(modname, Module.new)
-          end
-        else
-          mod = Object
-        end
-
         fields = []
-        if mod.const_defined?(classname)
-          klass = mod.const_get(classname)
-          parse_int(bytes).times do
-            fields << parse_string(bytes)
-          end
-        else
-          klass = mod.const_set(classname, Class.new)
-          parse_int(bytes).times do
-            field = parse_string(bytes)
-            klass.send(:define_method, field, proc{self.instance_variable_get("@#{field}")})
-            klass.send(:define_method, "#{field}=", proc{|v| self.instance_variable_set("@#{field}", v)})
-            fields << field
-          end
+        # mods = name.split(/\.|::/)
+        # classname = mods.pop.capitalize.to_sym
+        # if mods.size > 0
+        #   modname = mods.shift.capitalize.to_sym
+        #   mod = Object.const_defined?(modname) ? Object.const_get(modname) : Object.const_set(modname, Module.new)
+        #   mods.each do |m|
+        #     modname = m.capitalize.to_sym
+        #     mod = mod.const_defined?(modname) ? mod.const_get(modname) : mod.const_set(modname, Module.new)
+        #   end
+        # else
+        #   mod = Object
+        # end
 
-          klass.send(:define_method, '[]', proc{|k| self.instance_variable_get("@#{k.to_s}")})
+        # if mod.const_defined?(classname)
+        #   klass = mod.const_get(classname)
+        #   parse_int(bytes).times do
+        #     fields << parse_string(bytes)
+        #   end
+        # else
+        #   klass = mod.const_set(classname, Class.new)
+        #   parse_int(bytes).times do
+        #     field = parse_string(bytes)
+        #     klass.send(:define_method, field, proc{self.instance_variable_get("@#{field}")})
+        #     klass.send(:define_method, "#{field}=", proc{|v| self.instance_variable_set("@#{field}", v)})
+        #     fields << field
+        #   end
+
+        #   klass.send(:define_method, '[]', proc{|k| self.instance_variable_get("@#{k.to_s}")})
+        # end
+
+        # cdefs << [klass, fields] # store a class reference
+        parse_int(bytes).times do
+          fields << parse_string(bytes)
         end
+        cdefs << Struct.new(*fields.map{|f| f.to_sym})
 
-        cdefs << [klass, fields] # store a class reference
         parse_bytes(bytes, refs, cdefs)
       when 0x44 # 64-bit IEEE encoded double ('D')
         read_double(bytes)
@@ -123,14 +128,19 @@ module Hessian2
         nil
       when 0x4f # object instance ('O')
         cdef = cdefs[parse_int(bytes)]
-        val = cdef.first.new
+        # val = cdef.first.new
+        # refs << val # store a value reference first
+        # cdef.last.each do |f|
+        #   if val.respond_to?("#{f}=")
+        #     val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs))
+        #   else
+        #     parse_bytes(bytes, refs, cdefs)
+        #   end
+        # end
+        val = cdef.new
         refs << val # store a value reference first
-        cdef.last.each do |f|
-          if val.respond_to?("#{f}=")
-            val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs))
-          else
-            parse_bytes(bytes, refs, cdefs)
-          end
+        val.members.each do |sym|
+          val[sym] = parse_bytes(bytes, refs, cdefs)
         end
 
         val
@@ -192,14 +202,19 @@ module Hessian2
         read_double_mill(bytes)
       when 0x60..0x6f # object with direct type
         cdef = cdefs[bc - BC_OBJECT_DIRECT]
-        val = cdef.first.new
+        # val = cdef.first.new
+        # refs << val # store a value reference first
+        # cdef.last.each do |f|
+        #   if val.respond_to?("#{f}=")
+        #     val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs))
+        #   else
+        #     parse_bytes(bytes, refs, cdefs)
+        #   end
+        # end
+        val = cdef.new
         refs << val # store a value reference first
-        cdef.last.each do |f|
-          if val.respond_to?("#{f}=")
-            val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs))
-          else
-            parse_bytes(bytes, refs, cdefs)
-          end
+        val.members.each do |sym|
+          val[sym] = parse_bytes(bytes, refs, cdefs)
         end
 
         val
