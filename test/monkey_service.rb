@@ -9,6 +9,11 @@ $i = 0
 class MonkeyService
   extend Hessian2::Handler
 
+  def self.wait_taka(name)
+    sleep 15 if name == 'taka'
+    name
+  end
+
   def self.wait1
     sleep 1
     $i += 1
