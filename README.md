@@ -126,10 +126,16 @@ end
 cd test/
 ```
 
-start a service
+start a service in threaded mode(experimental)
 
 ```
-rackup -E production
+ruby ./app.rb -o 0.0.0.0 -e production
+```
+
+or
+
+```
+thin start -p 4567 --threaded -e production 
 ```
 
 test parser
