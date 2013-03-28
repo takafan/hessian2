@@ -4,8 +4,24 @@ $:.unshift(lib_path)
 require 'hessian2'
 require File.expand_path('../monkey',  __FILE__)
 
+$i = 0
+
 class MonkeyService
   extend Hessian2::Handler
+
+  def self.wait1
+    sleep 1
+    $i += 1
+    puts $i
+    $i
+  end
+
+  def self.wait5
+    sleep 5
+    $i += 1
+    puts $i
+    $i
+  end
   
   # 0x00..0x1f # utf-8 string length 0-31
   def self.get_string_0
