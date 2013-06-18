@@ -28,6 +28,53 @@ module Hessian2
 
     def write(val, refs = {}, crefs = {}, trefs = {})
       case val
+      when StructWrapper # monkey as array
+        obj = val.object
+        return write_nil if obj.nil?
+
+        idx = refs[val.object_id]
+        return write_ref(idx) if idx
+
+        refs[val.object_id] = refs.size
+
+        fields = val.klass.members.map{|m| m.to_s.prepend('@')}
+
+        if obj.is_a? Array
+          arr = []
+          sample = obj.first
+          if sample.is_a? Hash
+            obj.each do |o|
+              ovals = []
+              fields.each do |f|
+                ovals << o[f]
+              end
+              arr << ovals
+            end
+          else
+            obj.each do |o|
+              ovals = []
+              fields.each do |f|
+                ovals << o.instance_variable_get(f)
+              end
+              arr << ovals
+            end
+          end
+
+          write_array(arr, refs, crefs, trefs)
+        else
+          objvals = []
+          if obj.is_a? Hash
+            fields.each do |f|
+              objvals << obj[f]
+            end
+          else
+            fields.each do |f|
+              objvals << obj.instance_variable_get(f)
+            end
+          end
+        
+          write_array(objvals, refs, crefs, trefs)
+        end
       when ClassWrapper # hash as monkey; monkey as example.monkey; [hash as [monkey; [monkey as [example.monkey
         obj = val.object
         return write_nil if obj.nil?
@@ -197,6 +244,8 @@ module Hessian2
     end
 
     def print_string(str)
+      return str.b if String.method_defined?(:b)
+
       arr, i = Array.new(str.bytesize), 0
       str.unpack('U*').each do |c|
         if c < 0x80 # 0xxxxxxx

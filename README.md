@@ -1,30 +1,20 @@
 # hessian2
 
-json encode fast, hessian write small.
+like json, additionally, 麻绳2 support structured data, with no schema.
 
 hessian2 implements hessian 2.0 protocol. check [web services protocol](http://hessian.caucho.com/doc/hessian-ws.html) and [serialization protocol](http://hessian.caucho.com/doc/hessian-serialization.html).
 
 ## comparing
 
-data size after serializing 10_000 monkeys/hashes, and serializing|deserializing spent on my pc:
+yajl-ruby: json, fast.
 
-yajl-ruby: 9.33MB (0.28s|0.44s)
+msgpack: binary, faster.
 
-msgpack: 7.65MB (0.04s|0.17s)
+protobuf: encoding structured data with schema.
 
-marshal: 2.68MB (0.12s|0.07s)
+marshal: fast, powerful, but ruby only.
 
-hessian2: 1.11MB (1.21s|3.13s)
-
-## choosing
-
-readable: yajl-ruby
-
-serializing/deserializing efficiently: msgpack
-
-sending objects, but ruby only: marshal
-
-sending objects, saving transfer: hessian2
+hessian2: clean api as marshal, write smaller than pack, support object, parse it to struct.
 
 ## install
 
@@ -32,18 +22,80 @@ sending objects, saving transfer: hessian2
 gem install hessian2
 ```
 
+```
+require 'hessian2'
+```
+
 ## serializing
 
 ``` ruby
-require 'hessian2'
-data = Hessian2.write(obj)
+bin = Hessian2.write(obj)
 ```
 
 ## deserializing 
 
 ``` ruby
-require 'hessian2'
-obj = Hessian2.parse(data)
+obj = Hessian2.parse(bin)
+```
+
+## struct wrapper, for hash and object, only send values that specified
+
+writing a monkey to array-binary
+
+``` ruby
+wmonkey = Hessian2::StructWrapper.new(Struct.new(:name, :age), monkey)
+bin = Hessian2.write(wmonkey)
+```
+
+parsing array-binary to a monkey struct
+
+``` ruby
+smonkey = Hessian2.parse(bin, Struct.new(:name, :age))
+```
+
+monkeys
+
+``` ruby
+wmonkeys = Hessian2::StructWrapper.new([Struct.new(:name, :age)], monkeys)
+bin = Hessian2.write(wmonkeys)
+
+smonkeys = Hessian2.parse(bin, [Struct.new(:name, :age)])
+```
+
+struct wrapper support: hash, object, [hash, [object
+
+## class wrapper, for statically typed languages
+
+wrap a hash to a monkey
+
+``` ruby
+hash = {name: '阿门', age: 7}
+wmonkey = Hessian2::ClassWrapper.new('com.hululuu.Monkey', hash)
+```
+
+class wrapper support: hash, object, [hash, [object
+
+## type wrapper
+
+wrap a string to long
+
+``` ruby
+str = '-0x8_000_000_000_000_000'
+heslong = Hessian2::TypeWrapper.new('L', str)
+```
+
+wrap a file to binary
+
+``` ruby
+binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
+hesbin = Hessian2::TypeWrapper.new('B', binstr)
+```
+
+wrap a batch of files
+
+``` ruby
+arr = [binstr1, binstr2]
+hesbin = Hessian2::TypeWrapper.new('[B', arr))
 ```
 
 ## client
@@ -58,45 +110,6 @@ call remote method, send a monkey
 ``` ruby
 monkey = Monkey.new(name: '阿门', age: 7)
 client.send_monkey(monkey)
-```
-
-## class wrapper
-
-wrap a hash to a monkey
-
-``` ruby
-hash = {name: '阿门', age: 7}
-monkey = Hessian2::ClassWrapper.new('Monkey', hash)
-```
-
-wrap a batch of monkeys
-
-``` ruby
-arr = [{name: '阿门', age: 7}, {name: '大鸡', age: 6}]
-monkeys = Hessian2::ClassWrapper.new('[Monkey', arr)
-```
-
-## type wrapper
-
-wrap a string to long
-
-``` ruby
-str = '-0x8_000_000_000_000_000'
-long = Hessian2::TypeWrapper.new('L', str)
-```
-
-wrap a file to binary
-
-``` ruby
-binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
-file = Hessian2::TypeWrapper.new('B', binstr)
-```
-
-wrap a batch of files
-
-``` ruby
-arr = [binstr1, binstr2]
-files = Hessian2::TypeWrapper.new('[B', arr))
 ```
 
 ## service
@@ -126,7 +139,7 @@ end
 cd test/
 ```
 
-start a service in threaded mode(experimental)
+start a service in threaded mode
 
 ```
 ruby ./app.rb -o 0.0.0.0 -e production
@@ -151,6 +164,8 @@ ruby ./set.rb
 ```
 
 ## todo
+
+change range to elsif 
 
 supports packet and envelope
 

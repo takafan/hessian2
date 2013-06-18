@@ -115,13 +115,7 @@ module Hessian2
         true
       when 0x55 # variable-length list/vector ('U')
         parse_type(bytes)
-        unless klass
-          val = []
-          refs << val # store a value reference first
-          while bytes.peek != BC_END
-            val << parse_bytes(bytes, klass, refs, cdefs)
-          end
-        else # parse array with klass
+        unless klass.is_a? Array # parse array to struct
           arr = []
           while bytes.peek != BC_END
             arr << parse_bytes(bytes, klass, refs, cdefs)
@@ -129,56 +123,59 @@ module Hessian2
 
           val = klass.new(*arr)
           refs << val
+        else
+          klass = klass ? klass.first : nil
+          val = []
+          refs << val # store a value reference first
+          while bytes.peek != BC_END
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
         end
 
         bytes.next
         val
       when 0x56 # fixed-length list/vector ('V')
         parse_type(bytes)
-        unless klass
+        unless klass.is_a? Array # parse array to struct
+          arr = []
+          parse_int(bytes).times do
+            arr << parse_bytes(bytes, klass, refs, cdefs)
+          end
+
+          val = klass.new(*arr)
+          refs << val
+        else
+          klass = klass ? klass.first : nil
           val = []
           refs << val # store a value reference
           parse_int(bytes).times do
             val << parse_bytes(bytes, klass, refs, cdefs)
           end
-        else # parse array with klass
+        end
+
+        val
+      when 0x57 # variable-length untyped list/vector ('W')
+        unless klass.is_a? Array # parse array to struct
           arr = []
-          parse_int(bytes).times do
+          while bytes.peek != BC_END
             arr << parse_bytes(bytes, klass, refs, cdefs)
           end
 
           val = klass.new(*arr)
           refs << val
-        end
-
-        val
-      when 0x57 # variable-length untyped list/vector ('W')
-        unless klass
+        else
+          klass = klass ? klass.first : nil
           val = []
           refs << val # store a value reference first
           while bytes.peek != BC_END
             val << parse_bytes(bytes, klass, refs, cdefs)
           end
-        else # parse array with klass
-          arr = []
-          while bytes.peek != BC_END
-            arr << parse_bytes(bytes, klass, refs, cdefs)
-          end
-
-          val = klass.new(*arr)
-          refs << val
         end
 
         bytes.next
         val
       when 0x58 # fixed-length untyped list/vector ('X')
-        unless klass
-          val = []
-          refs << val # store a value reference first
-          parse_int(bytes).times do
-            val << parse_bytes(bytes, klass, refs, cdefs)
-          end
-        else # parse array with klass
+        unless klass.is_a? Array # parse array to struct
           arr = []
           parse_int(bytes).times do
             arr << parse_bytes(bytes, klass, refs, cdefs)
@@ -186,6 +183,13 @@ module Hessian2
 
           val = klass.new(*arr)
           refs << val
+        else
+          klass = klass ? klass.first : nil
+          val = []
+          refs << val # store a value reference first
+          parse_int(bytes).times do
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
         end
 
         val
@@ -212,13 +216,7 @@ module Hessian2
         val
       when 0x70..0x77 # fixed list with direct length
         parse_type(bytes)
-        unless klass
-          val = []
-          refs << val # store a value reference first
-          (bc - BC_LIST_DIRECT).times do
-            val << parse_bytes(bytes, klass, refs, cdefs)
-          end
-        else # parse array with klass
+        unless klass.is_a? Array # parse array to struct
           arr = []
           (bc - BC_LIST_DIRECT).times do
             arr << parse_bytes(bytes, klass, refs, cdefs)
@@ -226,17 +224,18 @@ module Hessian2
 
           val = klass.new(*arr)
           refs << val
+        else
+          klass = klass ? klass.first : nil
+          val = []
+          refs << val # store a value reference first
+          (bc - BC_LIST_DIRECT).times do
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
         end
 
         val
       when 0x78..0x7f # fixed untyped list with direct length
-        unless klass
-          val = []
-          refs << val # store a value reference first
-          (bc - BC_LIST_DIRECT_UNTYPED).times do
-            val << parse_bytes(bytes, klass, refs, cdefs)
-          end
-        else # parse array with klass
+        unless klass.is_a? Array # parse array to struct
           arr = []
           (bc - BC_LIST_DIRECT_UNTYPED).times do
             arr << parse_bytes(bytes, klass, refs, cdefs)
@@ -244,6 +243,13 @@ module Hessian2
 
           val = klass.new(*arr)
           refs << val
+        else
+          klass = klass ? klass.first : nil
+          val = []
+          refs << val # store a value reference first
+          (bc - BC_LIST_DIRECT_UNTYPED).times do
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
         end
 
         val
