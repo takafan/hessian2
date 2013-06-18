@@ -18,7 +18,7 @@ module Hessian2
         method = parse_string(bytes)
         refs, cdefs = [], []
         args = [].tap do |arr|
-          parse_int(bytes).times{ arr << parse_bytes(bytes, refs, cdefs) }
+          parse_int(bytes).times{ arr << parse_bytes(bytes, nil, refs, cdefs) }
         end
         [ method, *args ]
       when 0x46 # fault ('F')
@@ -32,11 +32,11 @@ module Hessian2
       end
     end
 
-    def parse(data)
-      parse_bytes(data.each_byte)
+    def parse(data, klass = nil)
+      parse_bytes(data.each_byte, klass)
     end
 
-    def parse_bytes(bytes, refs = [], cdefs = [])
+    def parse_bytes(bytes, klass = nil, refs = [], cdefs = [])
       bc = bytes.next
       case bc
       when 0x00..0x1f # utf-8 string length 0-31
@@ -56,43 +56,13 @@ module Hessian2
       when 0x43 # object type definition ('C')
         name = parse_string(bytes)
         fields = []
-        # mods = name.split(/\.|::/)
-        # classname = mods.pop.capitalize.to_sym
-        # if mods.size > 0
-        #   modname = mods.shift.capitalize.to_sym
-        #   mod = Object.const_defined?(modname) ? Object.const_get(modname) : Object.const_set(modname, Module.new)
-        #   mods.each do |m|
-        #     modname = m.capitalize.to_sym
-        #     mod = mod.const_defined?(modname) ? mod.const_get(modname) : mod.const_set(modname, Module.new)
-        #   end
-        # else
-        #   mod = Object
-        # end
 
-        # if mod.const_defined?(classname)
-        #   klass = mod.const_get(classname)
-        #   parse_int(bytes).times do
-        #     fields << parse_string(bytes)
-        #   end
-        # else
-        #   klass = mod.const_set(classname, Class.new)
-        #   parse_int(bytes).times do
-        #     field = parse_string(bytes)
-        #     klass.send(:define_method, field, proc{self.instance_variable_get("@#{field}")})
-        #     klass.send(:define_method, "#{field}=", proc{|v| self.instance_variable_set("@#{field}", v)})
-        #     fields << field
-        #   end
-
-        #   klass.send(:define_method, '[]', proc{|k| self.instance_variable_get("@#{k.to_s}")})
-        # end
-
-        # cdefs << [klass, fields] # store a class reference
         parse_int(bytes).times do
           fields << parse_string(bytes)
         end
         cdefs << Struct.new(*fields.map{|f| f.to_sym})
 
-        parse_bytes(bytes, refs, cdefs)
+        parse_bytes(bytes, klass, refs, cdefs)
       when 0x44 # 64-bit IEEE encoded double ('D')
         read_double(bytes)
       when 0x46 # boolean false ('F')
@@ -101,7 +71,7 @@ module Hessian2
         val = {}
         refs << val # store a value reference first
         while bytes.peek != BC_END
-          val[parse_bytes(bytes, refs, cdefs)] = parse_bytes(bytes, refs, cdefs)
+          val[parse_bytes(bytes, klass, refs, cdefs)] = parse_bytes(bytes, klass, refs, cdefs)
         end
 
         bytes.next
@@ -119,7 +89,7 @@ module Hessian2
         val = {}
         refs << val
         while bytes.peek != BC_END
-          val[parse_bytes(bytes, refs, cdefs)] = parse_bytes(bytes, refs, cdefs)
+          val[parse_bytes(bytes, klass, refs, cdefs)] = parse_bytes(bytes, klass, refs, cdefs)
         end
 
         bytes.next
@@ -128,19 +98,10 @@ module Hessian2
         nil
       when 0x4f # object instance ('O')
         cdef = cdefs[parse_int(bytes)]
-        # val = cdef.first.new
-        # refs << val # store a value reference first
-        # cdef.last.each do |f|
-        #   if val.respond_to?("#{f}=")
-        #     val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs))
-        #   else
-        #     parse_bytes(bytes, refs, cdefs)
-        #   end
-        # end
         val = cdef.new
         refs << val # store a value reference first
         val.members.each do |sym|
-          val[sym] = parse_bytes(bytes, refs, cdefs)
+          val[sym] = parse_bytes(bytes, klass, refs, cdefs)
         end
 
         val
@@ -154,37 +115,77 @@ module Hessian2
         true
       when 0x55 # variable-length list/vector ('U')
         parse_type(bytes)
-        val = []
-        refs << val # store a value reference first
-        while bytes.peek != BC_END
-          val << parse_bytes(bytes, refs, cdefs)
+        unless klass
+          val = []
+          refs << val # store a value reference first
+          while bytes.peek != BC_END
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
+        else # parse array with klass
+          arr = []
+          while bytes.peek != BC_END
+            arr << parse_bytes(bytes, klass, refs, cdefs)
+          end
+
+          val = klass.new(*arr)
+          refs << val
         end
 
         bytes.next
         val
       when 0x56 # fixed-length list/vector ('V')
         parse_type(bytes)
-        val = []
-        refs << val # store a value reference
-        parse_int(bytes).times do
-          val << parse_bytes(bytes, refs, cdefs)
+        unless klass
+          val = []
+          refs << val # store a value reference
+          parse_int(bytes).times do
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
+        else # parse array with klass
+          arr = []
+          parse_int(bytes).times do
+            arr << parse_bytes(bytes, klass, refs, cdefs)
+          end
+
+          val = klass.new(*arr)
+          refs << val
         end
 
         val
       when 0x57 # variable-length untyped list/vector ('W')
-        val = []
-        refs << val # store a value reference first
-        while bytes.peek != BC_END
-          val << parse_bytes(bytes, refs, cdefs)
+        unless klass
+          val = []
+          refs << val # store a value reference first
+          while bytes.peek != BC_END
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
+        else # parse array with klass
+          arr = []
+          while bytes.peek != BC_END
+            arr << parse_bytes(bytes, klass, refs, cdefs)
+          end
+
+          val = klass.new(*arr)
+          refs << val
         end
 
         bytes.next
         val
       when 0x58 # fixed-length untyped list/vector ('X')
-        val = []
-        refs << val # store a value reference first
-        parse_int(bytes).times do
-          val << parse_bytes(bytes, refs, cdefs)
+        unless klass
+          val = []
+          refs << val # store a value reference first
+          parse_int(bytes).times do
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
+        else # parse array with klass
+          arr = []
+          parse_int(bytes).times do
+            arr << parse_bytes(bytes, klass, refs, cdefs)
+          end
+
+          val = klass.new(*arr)
+          refs << val
         end
 
         val
@@ -202,36 +203,47 @@ module Hessian2
         read_double_mill(bytes)
       when 0x60..0x6f # object with direct type
         cdef = cdefs[bc - BC_OBJECT_DIRECT]
-        # val = cdef.first.new
-        # refs << val # store a value reference first
-        # cdef.last.each do |f|
-        #   if val.respond_to?("#{f}=")
-        #     val.instance_variable_set("@#{f}".to_sym, parse_bytes(bytes, refs, cdefs))
-        #   else
-        #     parse_bytes(bytes, refs, cdefs)
-        #   end
-        # end
         val = cdef.new
         refs << val # store a value reference first
         val.members.each do |sym|
-          val[sym] = parse_bytes(bytes, refs, cdefs)
+          val[sym] = parse_bytes(bytes, klass, refs, cdefs)
         end
 
         val
       when 0x70..0x77 # fixed list with direct length
         parse_type(bytes)
-        val = []
-        refs << val # store a value reference first
-        (bc - BC_LIST_DIRECT).times do
-          val << parse_bytes(bytes, refs, cdefs)
+        unless klass
+          val = []
+          refs << val # store a value reference first
+          (bc - BC_LIST_DIRECT).times do
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
+        else # parse array with klass
+          arr = []
+          (bc - BC_LIST_DIRECT).times do
+            arr << parse_bytes(bytes, klass, refs, cdefs)
+          end
+
+          val = klass.new(*arr)
+          refs << val
         end
 
         val
       when 0x78..0x7f # fixed untyped list with direct length
-        val = []
-        refs << val # store a value reference first
-        (bc - BC_LIST_DIRECT_UNTYPED).times do
-          val << parse_bytes(bytes, refs, cdefs)
+        unless klass
+          val = []
+          refs << val # store a value reference first
+          (bc - BC_LIST_DIRECT_UNTYPED).times do
+            val << parse_bytes(bytes, klass, refs, cdefs)
+          end
+        else # parse array with klass
+          arr = []
+          (bc - BC_LIST_DIRECT_UNTYPED).times do
+            arr << parse_bytes(bytes, klass, refs, cdefs)
+          end
+
+          val = klass.new(*arr)
+          refs << val
         end
 
         val
