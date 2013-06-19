@@ -22,11 +22,11 @@ hessian2: clean api as marshal, write smaller than pack, support object, parse i
 gem install hessian2
 ```
 
+## serializing
+
 ```
 require 'hessian2'
 ```
-
-## serializing
 
 ``` ruby
 bin = Hessian2.write(obj)
@@ -38,7 +38,9 @@ bin = Hessian2.write(obj)
 obj = Hessian2.parse(bin)
 ```
 
-## struct wrapper, for hash and object, only send values that specified
+## struct wrapper 
+
+for hash and object, only send values that specified.
 
 writing a monkey to array-binary
 
@@ -64,7 +66,9 @@ smonkeys = Hessian2.parse(bin, [Struct.new(:name, :age)])
 
 struct wrapper support: hash, object, [hash, [object
 
-## class wrapper, for statically typed languages
+## class wrapper
+
+for statically typed languages.
 
 wrap a hash to a monkey
 
@@ -164,8 +168,6 @@ ruby ./set.rb
 ```
 
 ## todo
-
-change range to elsif 
 
 supports packet and envelope
 
