@@ -206,14 +206,14 @@ module Hessian2
 
           ival = val.to_i
           if ival == val
-            return [ BC_DOUBLE_BYTE, ival ].pack('Cc') if (-0x80..0x7f).include?(ival) # double octet
-            return [ BC_DOUBLE_SHORT, (ival >> 8), ival ].pack('Ccc') if (-0x8000..0x7fff).include?(ival) # double short
+            return [ BC_DOUBLE_BYTE, ival ].pack('Cc') if ival >= -0x80 && ival <= 0x7f # double octet
+            return [ BC_DOUBLE_SHORT, (ival >> 8), ival ].pack('Ccc') if ival >= -0x8000 && ival <= 0x7fff # double short
           end
 
           mval = val * 1000
           if mval.finite?
             mills = mval.to_i
-            if (-0x80_000_000..0x7f_fff_fff).include?(mills) and 0.001 * mills == val
+            if (mills >= -0x80_000_000 && mills <= 0x7f_fff_fff) and (0.001 * mills == val)
               return [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
             end
           end
@@ -225,7 +225,7 @@ module Hessian2
       when Array
         write_array(val, refs, crefs, trefs)
       when Bignum
-        if (-0x80_000_000..0x7f_fff_fff).include?(val) # four octet longs
+        if val >= -0x80_000_000 && val <= 0x7f_fff_fff # four octet longs
           [ BC_LONG_INT, val ].pack('Cl>')
         else # long
           [ BC_LONG, val ].pack('Cq>')
@@ -374,14 +374,13 @@ module Hessian2
     end
 
     def write_int(val)
-      case val
-      when INT_DIRECT_MIN..INT_DIRECT_MAX # single octet integers
+      if val >= INT_DIRECT_MIN && val <= INT_DIRECT_MAX # single octet integers
         [ BC_INT_ZERO + val ].pack('c')
-      when INT_BYTE_MIN..INT_BYTE_MAX # two octet integers
+      elsif val >= INT_BYTE_MIN && val <= INT_BYTE_MAX # two octet integers
         [ BC_INT_BYTE_ZERO + (val >> 8), val ].pack('cc')
-      when INT_SHORT_MIN..INT_SHORT_MAX # three octet integers
+      elsif val >= INT_SHORT_MIN && val <= INT_SHORT_MAX # three octet integers
         [ BC_INT_SHORT_ZERO + (val >> 16), (val >> 8), val].pack('ccc')
-      when -0x80_000_000..0x7f_fff_fff # integer
+      elsif val >= -0x80_000_000 && val <= 0x7f_fff_fff # integer
         [ BC_INT, val ].pack('Cl>')
       else
         [ BC_LONG, val ].pack('Cq>')
@@ -389,14 +388,13 @@ module Hessian2
     end
 
     def write_long(val)
-      case val
-      when LONG_DIRECT_MIN..LONG_DIRECT_MAX # single octet longs
+      if val >= LONG_DIRECT_MIN && val <= LONG_DIRECT_MAX # single octet longs
         [ BC_LONG_ZERO + val ].pack('c')
-      when LONG_BYTE_MIN..LONG_BYTE_MAX # two octet longs
+      elsif val >= LONG_BYTE_MIN && val <= LONG_BYTE_MAX # two octet longs
         [ BC_LONG_BYTE_ZERO + (val >> 8), val ].pack('cc')
-      when LONG_SHORT_MIN..LONG_SHORT_MAX # three octet longs
+      elsif val >= LONG_SHORT_MIN && val <= LONG_SHORT_MAX # three octet longs
         [ BC_LONG_SHORT_ZERO + (val >> 16), (val >> 8), val ].pack('ccc')
-      when -0x80_000_000..0x7f_fff_fff # four octet longs
+      elsif val >= -0x80_000_000 && val <= 0x7f_fff_fff # four octet longs
         [ BC_LONG_INT, val ].pack('Cl>')
       else
         [ BC_LONG, val ].pack('Cq>')
