@@ -12,8 +12,6 @@ module Foo
   end
 end
 
-User = Struct.new(:first_name, :last_name)
-
 user = Foo::User.new
 user.first_name = "Lloyd"
 user.last_name = "Christmas"
@@ -26,6 +24,8 @@ puts bytes.size
 user_from_buf = user.parse_from_string(bytes)
 puts user_from_buf.first_name
 puts user_from_buf.last_name
+
+User = Struct.new(:first_name, :last_name)
 
 hes = Hessian2.write(%w[ Lloyd Christmas ])
 puts 'hessian2'

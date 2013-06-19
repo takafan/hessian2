@@ -3,8 +3,6 @@ $:.unshift(lib_path)
 require 'hessian2'
 require File.expand_path('../monkey',  __FILE__)
 
-MonkeyStruct = Struct.new(Monkey.to_s, :name, :age)
-
 monkey = Monkey.new
 monkey.name = '阿门'
 monkey.age = 7
@@ -18,53 +16,62 @@ monkey2.description = '大鸡啦啦啦'
 hash = {name: '阿门', age: 7, description: '阿门啦啦啦'}
 hash2 = {name: '大鸡', age: 6, description: '大鸡啦啦啦'}
 
-ahash = {'name' => '阿门', 'age' => 7, 'description' => '阿门啦啦啦'}
-ahash2 = {'name' => '大鸡', 'age' => 6, 'description' => '大鸡啦啦啦'}
+aash = {'name' => '阿门', 'age' => 7, 'description' => '阿门啦啦啦'}
+aash2 = {'name' => '大鸡', 'age' => 6, 'description' => '大鸡啦啦啦'}
+
+MonkeyStruct = Struct.new(Monkey.to_s, :name, :age)
+
+wmonkey = Hessian2::StructWrapper.new(MonkeyStruct, monkey)
+whash = Hessian2::StructWrapper.new(MonkeyStruct, hash)
+waash = Hessian2::StructWrapper.new(MonkeyStruct, aash)
+wmonkeys = Hessian2::StructWrapper.new([MonkeyStruct], [monkey, monkey2])
+whashes = Hessian2::StructWrapper.new([MonkeyStruct], [hash, hash2])
+waashes = Hessian2::StructWrapper.new([MonkeyStruct], [aash, aash2])
 
 puts 'wrap monkey'
 
-smonkeybin = Hessian2.write(Hessian2::StructWrapper.new(MonkeyStruct, monkey))
-puts smonkeybin.inspect
+monkeybin = Hessian2.write(wmonkey)
+puts monkeybin.inspect
 
-smonkey = Hessian2.parse(smonkeybin, MonkeyStruct)
-puts smonkey.inspect
+sonkey = Hessian2.parse(monkeybin, MonkeyStruct)
+puts sonkey.inspect
 
 puts 'wrap hash'
 
-shashbin = Hessian2.write(Hessian2::StructWrapper.new(MonkeyStruct, hash))
-puts shashbin.inspect
+hashbin = Hessian2.write(whash)
+puts hashbin.inspect
 
-smonkey = Hessian2.parse(shashbin, MonkeyStruct)
-puts smonkey.inspect
+sonkey = Hessian2.parse(hashbin, MonkeyStruct)
+puts sonkey.inspect
 
-puts 'wrap ahash'
+puts 'wrap aash'
 
-sahashbin = Hessian2.write(Hessian2::StructWrapper.new(MonkeyStruct, ahash))
-puts sahashbin.inspect
+aashbin = Hessian2.write(waash)
+puts aashbin.inspect
 
-smonkey = Hessian2.parse(sahashbin, MonkeyStruct)
-puts smonkey.inspect
+sonkey = Hessian2.parse(aashbin, MonkeyStruct)
+puts sonkey.inspect
 
 puts 'wrap monkeys'
 
-smonkeysbin = Hessian2.write(Hessian2::StructWrapper.new([MonkeyStruct], [monkey, monkey2]))
-puts smonkeysbin.inspect
+monkeysbin = Hessian2.write(wmonkeys)
+puts monkeysbin.inspect
 
-smonkeys = Hessian2.parse(smonkeysbin, [MonkeyStruct])
-puts smonkeys.inspect
+sonkeys = Hessian2.parse(monkeysbin, [MonkeyStruct])
+puts sonkeys.inspect
 
 puts 'wrap hashes'
 
-shashesbin = Hessian2.write(Hessian2::StructWrapper.new([MonkeyStruct], [hash, hash2]))
-puts shashesbin.inspect
+hashesbin = Hessian2.write(whashes)
+puts hashesbin.inspect
 
-smonkey = Hessian2.parse(shashesbin, [MonkeyStruct])
-puts smonkey.inspect
+sonkeys = Hessian2.parse(hashesbin, [MonkeyStruct])
+puts sonkeys.inspect
 
-puts 'wrap ahashes'
+puts 'wrap aashes'
 
-sahashesbin = Hessian2.write(Hessian2::StructWrapper.new([MonkeyStruct], [ahash, ahash2]))
-puts sahashesbin.inspect
+aashesbin = Hessian2.write(waashes)
+puts aashesbin.inspect
 
-smonkey = Hessian2.parse(sahashesbin, [MonkeyStruct])
-puts smonkey.inspect
+sonkeys = Hessian2.parse(aashesbin, [MonkeyStruct])
+puts sonkeys.inspect
