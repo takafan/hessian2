@@ -7,6 +7,9 @@ require 'redis/connection/hiredis'
 require 'memcached'
 require 'mysql2'
 require 'active_record'
+require 'yajl'
+require 'protobuf'
+require 'protobuf/message'
 
 number_of = 5959
 
@@ -22,7 +25,9 @@ cache = Memcached.new(options['cache_connstr'])
 ActiveRecord::Base.establish_connection(options['mysql'])
 ActiveRecord::Base.default_timezone = :local
 ActiveRecord::Base.time_zone_aware_attributes = true
-class Track < ActiveRecord::Base; end
+class Track < ActiveRecord::Base
+  attr_accessible :id, :title, :intro, :created_at
+end
 TrackStruct = Struct.new(:id, :title, :intro, :created_at)
 
 if options['seed']
@@ -30,12 +35,8 @@ if options['seed']
     table_name = Track.table_name
     ActiveRecord::Base.connection.execute("truncate table #{table_name}")
     now = Time.new
-    1000.times do |i|
-      track = Track.create(id: i, title: "标题#{i}", intro: "intro#{i}", created_at: now)
-      key = "track#{track.id}.hes"
-      bin = Hessian.write(Hessian::StructWrapper.new(TrackStruct, track))
-      redis.set(key, bin)
-      cache.set(key, bin)
+    1.upto(1000).each do |i|
+      Track.create(id: i, title: "标题#{i}", intro: "intro#{i}", created_at: now)
     end
   rescue ActiveRecord::StatementInvalid => e
     conn = ActiveRecord::Base.connection
@@ -47,13 +48,63 @@ end
 
 id = 59
 track = Track.find(id)
+attributes = track.attributes
+values = []
+TrackStruct.members.each do |m|
+  values << attributes[m.to_s]
+end
+
+puts track.inspect
+puts attributes
+puts values.join(', ')
+
+bin = Hessian2.write(Hessian2::StructWrapper.new(TrackStruct, attributes))
 key = "track#{track.id}.hes"
+redis.set(key, bin)
+cache.set(key, bin)
+
+htrack = Hessian2.parse(redis.get(key), TrackStruct)
+
+puts key
+puts bin.inspect
+puts htrack.inspect
+
+
+mar = Marshal.dump(values)
+markey = "track#{track.id}.mar"
+redis.set(markey, mar)
+cache.set(markey, mar)
+
+mtrack = TrackStruct.new(*Marshal.load(redis.get(markey)))
+
+puts markey
+puts mar.inspect
+puts mtrack.inspect
+
+json = Yajl::Encoder.encode(values)
+jsonkey = "track#{track.id}.json"
+redis.set(jsonkey, json)
+cache.set(jsonkey, json)
+
+jtrack = TrackStruct.new(*Yajl::Parser.parse(redis.get(jsonkey)))
+
+puts jsonkey
+puts json.inspect
+puts jtrack.inspect
+
+# module Proto
+#   class User < ::Protobuf::Message
+#     required ::Protobuf::Field::StringField, :id, 1
+#     required ::Protobuf::Field::StringField, :last_name, 2
+#     :id, :title, :intro, :created_at
+#   end
+# end
 
 #
 # 2. validate
 #
 
-[Hessian.parse(redis.get(key), TrackStruct), Hessian.parse(cache.get(key), TrackStruct)].each do |cached_track|
+[htrack, Hessian2.parse(cache.get(key), TrackStruct)].each do |cached_track|
   raise "#{track.title} not cached" if cached_track.title != track.title
 end
 
@@ -65,19 +116,31 @@ Benchmark.bmbm do |x|
 
   x.report "redis" do
     number_of.times do
-      Hessian.parse(redis.get(key), TrackStruct)
+      Hessian2.parse(redis.get(key), TrackStruct)
     end
   end
 
   x.report "memcached" do
     number_of.times do
-      Hessian.parse(cache.get(key), TrackStruct)
+      Hessian2.parse(cache.get(key), TrackStruct)
     end
   end
   
-  x.report "mysql" do
+  x.report "mysql2" do
     number_of.times do
       Track.find(id)
+    end
+  end
+
+  x.report "redis mar" do
+    number_of.times do
+      TrackStruct.new(*Marshal.load(redis.get(markey)))
+    end
+  end
+
+  x.report "redis json" do
+    number_of.times do
+      TrackStruct.new(*Yajl::Parser.parse(redis.get(jsonkey)))
     end
   end
 
