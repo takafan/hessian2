@@ -124,7 +124,7 @@ module Hessian2
         true
       when 0x55 # variable-length list/vector ('U')
         parse_type(bytes)
-        if klass and !klass.is_a?(Array) # parse to struct
+        if klass && !klass.is_a?(Array) # parse to struct
           arr = []
           while bytes.peek != BC_END
             arr << parse_bytes(bytes, nil, refs, cdefs)
@@ -145,7 +145,7 @@ module Hessian2
         val
       when 0x56 # fixed-length list/vector ('V')
         parse_type(bytes)
-        if klass and !klass.is_a?(Array) # parse to struct
+        if klass && !klass.is_a?(Array) # parse to struct
           arr = []
           parse_int(bytes).times do
             arr << parse_bytes(bytes, nil, refs, cdefs)
@@ -164,7 +164,7 @@ module Hessian2
 
         val
       when 0x57 # variable-length untyped list/vector ('W')
-        if klass and !klass.is_a?(Array) # parse to struct
+        if klass && !klass.is_a?(Array) # parse to struct
           arr = []
           while bytes.peek != BC_END
             arr << parse_bytes(bytes, nil, refs, cdefs)
@@ -184,7 +184,7 @@ module Hessian2
         bytes.next
         val
       when 0x58 # fixed-length untyped list/vector ('X')
-        if klass and !klass.is_a?(Array) # parse to struct
+        if klass && !klass.is_a?(Array) # parse to struct
           arr = []
           parse_int(bytes).times do
             arr << parse_bytes(bytes, nil, refs, cdefs)
@@ -228,7 +228,7 @@ module Hessian2
       when 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77
         # 0x70 - 0x77 fixed list with direct length
         parse_type(bytes)
-        if klass and !klass.is_a?(Array) # parse to struct
+        if klass && !klass.is_a?(Array) # parse to struct
           arr = []
           (bc - BC_LIST_DIRECT).times do
             arr << parse_bytes(bytes, nil, refs, cdefs)
@@ -248,7 +248,7 @@ module Hessian2
         val
       when 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f
         # 0x78 - 0x7f fixed untyped list with direct length
-        if klass and !klass.is_a?(Array) # parse to struct
+        if klass && !klass.is_a?(Array) # parse to struct
           arr = []
           (bc - BC_LIST_DIRECT_UNTYPED).times do
             arr << parse_bytes(bytes, nil, refs, cdefs)

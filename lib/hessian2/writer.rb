@@ -37,20 +37,20 @@ module Hessian2
 
         refs[val.object_id] = refs.size
 
-        fields = val.klass.members.map{|m| m.to_s.prepend('@')}
-
         if obj.is_a? Array
           arr = []
           sample = obj.first
           if sample.is_a? Hash
+            fields = val.klass.members
             obj.each do |o|
               ovals = []
               fields.each do |f|
-                ovals << o[f]
+                ovals << (o[f] || o[f.to_s])
               end
               arr << ovals
             end
           else
+            fields = val.klass.members.map{|m| m.to_s.prepend('@')}
             obj.each do |o|
               ovals = []
               fields.each do |f|
@@ -64,11 +64,11 @@ module Hessian2
         else
           objvals = []
           if obj.is_a? Hash
-            fields.each do |f|
-              objvals << obj[f]
+            val.klass.members.each do |f|
+              objvals << (obj[f] || obj[f.to_s])
             end
           else
-            fields.each do |f|
+            val.klass.members.map{|m| m.to_s.prepend('@')}.each do |f|
               objvals << obj.instance_variable_get(f)
             end
           end
@@ -188,7 +188,7 @@ module Hessian2
       when FalseClass
         [ BC_FALSE ].pack('C')
       when Time
-        if val.usec == 0 and val.sec == 0 # date in minutes
+        if val.usec == 0 && val.sec == 0 # date in minutes
           [ BC_DATE_MINUTE, val.to_i / 60 ].pack('CL>')
         else
           [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('CQ>') # date
@@ -213,7 +213,7 @@ module Hessian2
           mval = val * 1000
           if mval.finite?
             mills = mval.to_i
-            if (mills >= -0x80_000_000 && mills <= 0x7f_fff_fff) and (0.001 * mills == val)
+            if mills >= -0x80_000_000 && mills <= 0x7f_fff_fff && 0.001 * mills == val
               return [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
             end
           end
