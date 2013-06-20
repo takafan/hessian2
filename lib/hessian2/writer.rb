@@ -28,7 +28,7 @@ module Hessian2
 
     def write(val, refs = {}, crefs = {}, trefs = {})
       case val
-      when StructWrapper # monkey as array
+      when StructWrapper # ([)object to ([)values-array
         obj = val.object
         return write_nil if obj.nil?
 
@@ -37,45 +37,52 @@ module Hessian2
 
         refs[val.object_id] = refs.size
 
-        if obj.is_a? Array
+        klass = val.klass
+        
+        if klass.is_a? Array
+          fields = klass.first.members
           arr = []
-          sample = obj.first
-          if sample.is_a? Hash
-            fields = val.klass.members
-            obj.each do |o|
-              ovals = []
+
+          obj.each do |o|
+            ovals = []
+            if o.is_a? Hash
               fields.each do |f|
                 ovals << (o[f] || o[f.to_s])
               end
-              arr << ovals
-            end
-          else
-            fields = val.klass.members.map{|m| m.to_s.prepend('@')}
-            obj.each do |o|
-              ovals = []
+            elsif o.instance_variable_get(:@attributes).is_a? Hash
+              attrs = o.attributes
               fields.each do |f|
-                ovals << o.instance_variable_get(f)
+                ovals << attrs[f.to_s]
               end
-              arr << ovals
+            else
+              fields.each do |f|
+                ovals << o.instance_variable_get(f.to_s.prepend('@'))
+              end
             end
+            arr << ovals
           end
 
           write_array(arr, refs, crefs, trefs)
         else
           objvals = []
           if obj.is_a? Hash
-            val.klass.members.each do |f|
+            klass.members.each do |f|
               objvals << (obj[f] || obj[f.to_s])
             end
+          elsif obj.instance_variable_get(:@attributes).is_a? Hash
+            attrs = obj.attributes
+            klass.members.each do |f|
+              objvals << attrs[f.to_s]
+            end
           else
-            val.klass.members.map{|m| m.to_s.prepend('@')}.each do |f|
-              objvals << obj.instance_variable_get(f)
+            klass.members.each do |f|
+              objvals << obj.instance_variable_get(f.to_s.prepend('@'))
             end
           end
         
           write_array(objvals, refs, crefs, trefs)
         end
-      when ClassWrapper # hash as monkey; monkey as example.monkey; [hash as [monkey; [monkey as [example.monkey
+      when ClassWrapper # class definition for statically typed languages
         obj = val.object
         return write_nil if obj.nil?
 

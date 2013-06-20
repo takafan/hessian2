@@ -23,7 +23,7 @@ puts huser.first_name
 puts huser.last_name
 
 puts 'hes2'
-hes2 = Hessian2.write(%w[ Lloyd Christmas ])
+hes2 = Hessian2.write(Hessian2::StructWrapper.new(UserStruct, user))
 puts hes2.inspect
 puts hes2.size
 
