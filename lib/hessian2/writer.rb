@@ -200,7 +200,7 @@ module Hessian2
         else
           [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('CQ>') # date
         end
-      when Float
+      when Float, BigDecimal
         case val.infinite?
         when 1
           return [ BC_DOUBLE, Float::INFINITY ].pack('CG')

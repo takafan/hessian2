@@ -1,75 +1,27 @@
 lib_path = File.expand_path('../../lib', __FILE__)
 $:.unshift(lib_path)
-require 'hessian2'
+
 require 'benchmark'
-require 'redis'
-require 'redis/connection/hiredis' 
+require 'hessian2'
 require 'memcached'
-require 'mysql2'
-require 'active_record'
-require 'yajl'
 require 'msgpack'
 require 'protobuf'
-
-class Track < ActiveRecord::Base
-  attr_accessible :id, :title, :intro, :created_at
-end
-
-TrackStruct = Struct.new(:id, :title, :intro, :created_at)
-
-##
-# This file is auto-generated. DO NOT EDIT!
-#
-require 'protobuf/message'
-
-module Proto
-
-  ##
-  # Message Classes
-  #
-  class Track < ::Protobuf::Message; end
-  
-  ##
-  # Message Fields
-  #
-  class Track
-    required ::Protobuf::Field::Int32Field, :id, 1
-    optional ::Protobuf::Field::StringField, :title, 2
-    optional ::Protobuf::Field::StringField, :intro, 3
-    required ::Protobuf::Field::Int32Field, :created_at, 4
-  end
-  
-  
-end
+require 'redis'
+require 'redis/connection/hiredis' 
+require 'yajl'
+require File.expand_path('../defs.pb',  __FILE__)
+require File.expand_path('../establish_connection',  __FILE__)
+require File.expand_path('../monkey',  __FILE__)
 
 options = YAML.load_file(File.expand_path('../options.yml', __FILE__))
 redis_opts = options['redis']
 redis = Redis.new(driver: :hiredis, host: redis_opts['host'], port: redis_opts['port'], 
   password: redis_opts['password'], db: redis_opts['db'] || 0)
 cache = Memcached.new(options['cache_connstr'])
-ActiveRecord::Base.establish_connection(options['mysql'])
-ActiveRecord::Base.default_timezone = :local
-ActiveRecord::Base.time_zone_aware_attributes = true
-
-if options['seed']
-  begin
-    table_name = Track.table_name
-    ActiveRecord::Base.connection.execute("truncate table #{table_name}")
-    now = Time.new
-    1.upto(1000).each do |i|
-      Track.create(id: i, title: "标题#{i}", intro: "intro#{i}", created_at: now)
-    end
-  rescue ActiveRecord::StatementInvalid => e
-    conn = ActiveRecord::Base.connection
-    conn.execute("drop table if exists #{table_name}")
-    conn.execute("create table #{table_name}(id integer(11) not null auto_increment, title varchar(255), intro text, created_at datetime, primary key(id)) charset=utf8")
-    retry
-  end
-end
 
 id = 59
-track = Track.find(id)
-attrs = track.attributes
+monkey = Monkey.find(id)
+attrs = monkey.attributes
 attrs2 = {}
 attrs.each do |k, v|
   attrs2[k] = v.is_a?(Time) ? v.to_i : v
@@ -77,12 +29,12 @@ end
 
 values = []
 values2 = []
-TrackStruct.members.each do |m|
+MonkeyStruct.members.each do |m|
   values << attrs[m.to_s]
   values2 << attrs2[m.to_s]
 end
 
-puts track.inspect
+puts monkey.inspect
 puts "attrs: #{attrs.inspect}"
 puts "attrs2: #{attrs2.inspect}"
 puts "values: #{values.inspect}"
@@ -91,21 +43,21 @@ puts
 
 # hessian2
 
-hes = Hessian2.write(Hessian2::StructWrapper.new(TrackStruct, track))
-heskey = "track#{track.id}.hes"
+hes = Hessian2.write(Hessian2::StructWrapper.new(MonkeyStruct, monkey))
+heskey = "monkey#{monkey.id}.hes"
 redis.set(heskey, hes)
 cache.set(heskey, hes)
 
 puts heskey
 puts hes.inspect
 puts hes.size
-puts Hessian2.parse(hes, TrackStruct).inspect
+puts Hessian2.parse(hes, MonkeyStruct).inspect
 puts
 
 # marshal
 
 mar = Marshal.dump(values)
-markey = "track#{track.id}.mar"
+markey = "monkey#{monkey.id}.mar"
 redis.set(markey, mar)
 cache.set(markey, mar)
 
@@ -118,7 +70,7 @@ puts
 # yajl
 
 json = Yajl::Encoder.encode(values2)
-jsonkey = "track#{track.id}.json"
+jsonkey = "monkey#{monkey.id}.json"
 redis.set(jsonkey, json)
 cache.set(jsonkey, json)
 
@@ -131,7 +83,7 @@ puts
 # msgpack
 
 msg = MessagePack.dump(values2)
-msgkey = "track#{track.id}.msg"
+msgkey = "monkey#{monkey.id}.msg"
 redis.set(msgkey, msg)
 cache.set(msgkey, msg)
 
@@ -143,30 +95,30 @@ puts
 
 # protobuf
 
-pro = Proto::Track.new(attrs2).serialize_to_string
-prokey = "track#{track.id}.pro"
+pro = Proto::Monkey.new(attrs2).serialize_to_string
+prokey = "monkey#{monkey.id}.pro"
 redis.set(prokey, pro)
 cache.set(prokey, pro)
 
 puts prokey
 puts pro.inspect
 puts pro.size
-puts Proto::Track.new.parse_from_string(pro).inspect
+puts Proto::Monkey.new.parse_from_string(pro).inspect
 puts
 
 # benchmark
 
-raise "#{track.title} not cached" unless [
-  Hessian2.parse(redis.get(heskey), TrackStruct).title, 
-  Hessian2.parse(cache.get(heskey), TrackStruct).title,
-  track.title ].uniq.size == 1
+raise "#{monkey.name} not cached" unless [
+  Hessian2.parse(redis.get(heskey), MonkeyStruct).name, 
+  Hessian2.parse(cache.get(heskey), MonkeyStruct).name,
+  monkey.name ].uniq.size == 1
 
-raise 'created_at not match' unless [
-  Hessian2.parse(hes, TrackStruct).created_at, 
-  TrackStruct.new(*Marshal.load(mar)).created_at,
-  Time.at(TrackStruct.new(*Yajl::Parser.parse(json)).created_at),
-  Time.at(TrackStruct.new(*MessagePack.unpack(msg)).created_at),
-  Time.at(Proto::Track.new.parse_from_string(pro).created_at) ].uniq.size == 1
+raise 'born_at not match' unless [
+  Hessian2.parse(hes, MonkeyStruct).born_at, 
+  MonkeyStruct.new(*Marshal.load(mar)).born_at,
+  Time.at(MonkeyStruct.new(*Yajl::Parser.parse(json)).born_at),
+  Time.at(MonkeyStruct.new(*MessagePack.unpack(msg)).born_at),
+  Time.at(Proto::Monkey.new.parse_from_string(pro).born_at) ].uniq.size == 1
 
 number_of = ARGV.first ? ARGV.first.to_i : 5959
 
@@ -174,13 +126,13 @@ Benchmark.bmbm do |x|
 
   x.report "redis hes" do
     number_of.times do
-      Hessian2.parse(redis.get(heskey), TrackStruct)
+      Hessian2.parse(redis.get(heskey), MonkeyStruct)
     end
   end
 
   x.report "memcached hes" do
     number_of.times do
-      Hessian2.parse(cache.get(heskey), TrackStruct)
+      Hessian2.parse(cache.get(heskey), MonkeyStruct)
     end
   end
   
@@ -192,31 +144,31 @@ Benchmark.bmbm do |x|
 
   x.report "hes" do
     number_of.times do
-      Hessian2.parse(hes, TrackStruct).created_at
+      Hessian2.parse(hes, MonkeyStruct).created_at
     end
   end
 
   x.report "mar" do
     number_of.times do
-      TrackStruct.new(*Marshal.load(mar)).created_at
+      MonkeyStruct.new(*Marshal.load(mar)).created_at
     end
   end
 
   x.report "json" do
     number_of.times do
-      Time.at(TrackStruct.new(*Yajl::Parser.parse(json)).created_at)
+      Time.at(MonkeyStruct.new(*Yajl::Parser.parse(json)).created_at)
     end
   end
 
   x.report "msg" do
     number_of.times do
-      Time.at(TrackStruct.new(*MessagePack.unpack(msg)).created_at)
+      Time.at(MonkeyStruct.new(*MessagePack.unpack(msg)).created_at)
     end
   end
 
   x.report "pro" do
     number_of.times do
-      Time.at(Proto::Track.new.parse_from_string(pro).created_at)
+      Time.at(Proto::Monkey.new.parse_from_string(pro).created_at)
     end
   end
 

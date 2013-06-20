@@ -1,0 +1,7 @@
+package proto;
+message Monkey {
+  required int32 born_at = 1;
+  required int32 id = 2;
+  required string name = 3;
+  required float price = 4;
+}
