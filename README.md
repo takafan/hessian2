@@ -57,7 +57,7 @@ parsing values-binary to a monkey struct
 
 ``` ruby
 monkey = Hessian2.parse(bin, MonkeyStruct)
-#=> #<struct born_at=2005-03-04 00:00:00 +0800, name="\u963F\u95E8">
+#=> #<struct born_at=2009-05-08 00:00:00 +0800, name="\u5927\u9E21">
 ```
 
 monkeys
@@ -97,7 +97,7 @@ binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
 hesbin = Hessian2::TypeWrapper.new(:bin, binstr)
 ```
 
-type wrapper supports: 'L', 'I', 'B', '[L', '[I', '[B', :long, :int, :bin, [:long], [:int], [:bin]
+there are types: 'L', 'I', 'B', '[L', '[I', '[B', :long, :int, :bin, [:long], [:int], [:bin]
 
 ## client
 
