@@ -30,7 +30,6 @@ require 'hessian2'
 
 ``` ruby
 monkey = Monkey.new(born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99)
-
 #=> #<Monkey id: nil, born_at: "2009-05-08 00:00:00", name: "\u5927\u9E21", price: #<BigDecimal:2b7c568,'0.9998999999 999999E2',27(45)>>
 
 bin = Hessian2.write(monkey)
@@ -40,7 +39,6 @@ bin = Hessian2.write(monkey)
 
 ``` ruby
 monkey = Hessian2.parse(bin)
-
 #=> #<struct id=nil, born_at=2009-05-08 00:00:00 +0800, name="\u5927\u9E21", price=(7036170730324623/70368744177664)>
 ```
 
@@ -59,6 +57,7 @@ parsing values-binary to a monkey struct
 
 ``` ruby
 monkey = Hessian2.parse(bin, MonkeyStruct)
+#=> #<struct born_at=2005-03-04 00:00:00 +0800, name="\u963F\u95E8">
 ```
 
 monkeys
@@ -70,7 +69,7 @@ bin = Hessian2.write(wrapped_monkeys)
 monkeys = Hessian2.parse(bin, [MonkeyStruct])
 ```
 
-struct wrapper support: hash, object, [hash, [object
+struct wrapper supports: hash, object, [hash, [object
 
 ## class wrapper
 
@@ -80,7 +79,7 @@ for statically typed languages.
 wrapped_monkey = Hessian2::ClassWrapper.new('com.sun.java.Monkey', monkey)
 ```
 
-class wrapper support: hash, object, [hash, [object
+class wrapper supports: hash, object, [hash, [object
 
 ## type wrapper
 
@@ -98,7 +97,7 @@ binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
 hesbin = Hessian2::TypeWrapper.new(:bin, binstr)
 ```
 
-type wrapper support: 'L' / :long, 'I' / :int, 'B' / :bin, '[L' / [:long], '[I' / [:int], '[B' / [:bin]
+type wrapper supports: 'L', 'I', 'B', '[L', '[I', '[B', :long, :int, :bin, [:long], [:int], [:bin]
 
 ## client
 
@@ -110,7 +109,6 @@ client = Hessian2::Client.new(url)
 call remote method, send a monkey
 
 ``` ruby
-monkey = Monkey.new(name: '阿门', age: 7)
 client.send_monkey(monkey)
 ```
 
@@ -141,7 +139,7 @@ end
 cd test/
 ```
 
-start a service in threaded mode
+start a service
 
 ```
 ruby ./app.rb -o 0.0.0.0 -e production
