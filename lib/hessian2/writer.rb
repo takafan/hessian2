@@ -91,7 +91,7 @@ module Hessian2
 
         refs[val.object_id] = refs.size
 
-        if obj.is_a? Array
+        if val.hessian_class[0] == '['
           type = val.hessian_class
           if trefs.include?(type)
             tstr = write_int(trefs[type])
@@ -172,7 +172,7 @@ module Hessian2
           tstr = write_string(type)
         end
 
-        if obj.is_a? Array
+        if type[0] == '['
           write_type_wrapped_array(obj, tstr, type, refs, crefs, trefs)
         else
           case type

@@ -79,6 +79,12 @@ for statically typed languages.
 wrapped_monkey = Hessian2::ClassWrapper.new('com.sun.java.Monkey', monkey)
 ```
 
+monkeys
+
+``` ruby
+wrapped_monkeys = Hessian2::ClassWrapper.new('[com.sun.java.Monkey', monkeys)
+```
+
 class wrapper supports: hash, object, [hash, [object
 
 ## type wrapper
