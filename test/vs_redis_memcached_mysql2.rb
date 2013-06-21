@@ -24,7 +24,14 @@ monkey = Monkey.find(id)
 attrs = monkey.attributes
 attrs2 = {}
 attrs.each do |k, v|
-  attrs2[k] = v.is_a?(Time) ? v.to_i : v
+  attrs2[k] = case v 
+  when Time
+    v.to_i
+  when BigDecimal
+    v.to_f
+  else
+    v
+  end
 end
 
 values = []
@@ -144,31 +151,31 @@ Benchmark.bmbm do |x|
 
   x.report "hes" do
     number_of.times do
-      Hessian2.parse(hes, MonkeyStruct).created_at
+      Hessian2.parse(hes, MonkeyStruct).born_at
     end
   end
 
   x.report "mar" do
     number_of.times do
-      MonkeyStruct.new(*Marshal.load(mar)).created_at
+      MonkeyStruct.new(*Marshal.load(mar)).born_at
     end
   end
 
   x.report "json" do
     number_of.times do
-      Time.at(MonkeyStruct.new(*Yajl::Parser.parse(json)).created_at)
+      Time.at(MonkeyStruct.new(*Yajl::Parser.parse(json)).born_at)
     end
   end
 
   x.report "msg" do
     number_of.times do
-      Time.at(MonkeyStruct.new(*MessagePack.unpack(msg)).created_at)
+      Time.at(MonkeyStruct.new(*MessagePack.unpack(msg)).born_at)
     end
   end
 
   x.report "pro" do
     number_of.times do
-      Time.at(Proto::Monkey.new.parse_from_string(pro).created_at)
+      Time.at(Proto::Monkey.new.parse_from_string(pro).born_at)
     end
   end
 
