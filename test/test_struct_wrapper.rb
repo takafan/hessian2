@@ -10,7 +10,7 @@ hash = { born_at: Time.new(2005, 3, 4), name: '阿门', price: 59.59 }
 hash2 = { born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99 }
 
 monkey = Monkey.new(hash)
-monkey2 = Monkey.new(hash2)
+monkey2 = Monkey.new(born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99)
 
 aash = monkey.attributes
 aash2 = monkey2.attributes

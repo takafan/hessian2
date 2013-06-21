@@ -64,7 +64,7 @@ cache.set(markey, mar)
 puts markey
 puts mar.inspect
 puts mar.size
-puts TrackStruct.new(*Marshal.load(mar)).inspect
+puts MonkeyStruct.new(*Marshal.load(mar)).inspect
 puts
 
 # yajl
@@ -77,7 +77,7 @@ cache.set(jsonkey, json)
 puts jsonkey
 puts json.inspect
 puts json.size
-puts TrackStruct.new(*Yajl::Parser.parse(json)).inspect
+puts MonkeyStruct.new(*Yajl::Parser.parse(json)).inspect
 puts
 
 # msgpack
@@ -90,7 +90,7 @@ cache.set(msgkey, msg)
 puts msgkey
 puts msg.inspect
 puts msg.size
-puts TrackStruct.new(*MessagePack.unpack(msg)).inspect
+puts MonkeyStruct.new(*MessagePack.unpack(msg)).inspect
 puts
 
 # protobuf
@@ -138,7 +138,7 @@ Benchmark.bmbm do |x|
   
   x.report "mysql2" do
     number_of.times do
-      Track.find(id)
+      Monkey.find(id)
     end
   end
 

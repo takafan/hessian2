@@ -12,9 +12,9 @@ msgpack: binary, faster.
 
 protobuf: encoding structured data with schema.
 
-marshal: fast, powerful, but ruby only.
+marshal: powerful, fast, but ruby only.
 
-hessian2: clean api as marshal, write smaller than pack, support object, parse it to struct.
+hessian2: powerful as marshal but parse object to struct, clean api, smaller.
 
 ## install
 
@@ -29,39 +29,45 @@ require 'hessian2'
 ```
 
 ``` ruby
-bin = Hessian2.write(obj)
+monkey = Monkey.new(born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99)
+
+#=> #<Monkey id: nil, born_at: "2009-05-08 00:00:00", name: "\u5927\u9E21", price: #<BigDecimal:2b7c568,'0.9998999999 999999E2',27(45)>>
+
+bin = Hessian2.write(monkey)
 ```
 
 ## deserializing 
 
 ``` ruby
-obj = Hessian2.parse(bin)
+monkey = Hessian2.parse(bin)
+
+#=> #<struct id=nil, born_at=2009-05-08 00:00:00 +0800, name="\u5927\u9E21", price=(7036170730324623/70368744177664)>
 ```
 
 ## struct wrapper 
 
 for hash and object, only send values that specified.
 
-writing a monkey to array-binary
-
 ``` ruby
-wmonkey = Hessian2::StructWrapper.new(Struct.new(:name, :age), monkey)
-bin = Hessian2.write(wmonkey)
+MonkeyStruct = Struct.new(:born_at, :name)
+
+wrapped_monkey = Hessian2::StructWrapper.new(MonkeyStruct, monkey)
+bin = Hessian2.write(wrapped_monkey)
 ```
 
-parsing array-binary to a monkey struct
+parsing values-binary to a monkey struct
 
 ``` ruby
-smonkey = Hessian2.parse(bin, Struct.new(:name, :age))
+monkey = Hessian2.parse(bin, MonkeyStruct)
 ```
 
 monkeys
 
 ``` ruby
-wmonkeys = Hessian2::StructWrapper.new([Struct.new(:name, :age)], monkeys)
-bin = Hessian2.write(wmonkeys)
+wrapped_monkeys = Hessian2::StructWrapper.new([MonkeyStruct], monkeys)
+bin = Hessian2.write(wrapped_monkeys)
 
-smonkeys = Hessian2.parse(bin, [Struct.new(:name, :age)])
+monkeys = Hessian2.parse(bin, [MonkeyStruct])
 ```
 
 struct wrapper support: hash, object, [hash, [object
@@ -70,11 +76,8 @@ struct wrapper support: hash, object, [hash, [object
 
 for statically typed languages.
 
-wrap a hash to a monkey
-
 ``` ruby
-hash = {name: '阿门', age: 7}
-wmonkey = Hessian2::ClassWrapper.new('com.hululuu.Monkey', hash)
+wrapped_monkey = Hessian2::ClassWrapper.new('com.sun.java.Monkey', monkey)
 ```
 
 class wrapper support: hash, object, [hash, [object
@@ -85,22 +88,17 @@ wrap a string to long
 
 ``` ruby
 str = '-0x8_000_000_000_000_000'
-heslong = Hessian2::TypeWrapper.new('L', str)
+heslong = Hessian2::TypeWrapper.new(:long, str)
 ```
 
 wrap a file to binary
 
 ``` ruby
 binstr = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
-hesbin = Hessian2::TypeWrapper.new('B', binstr)
+hesbin = Hessian2::TypeWrapper.new(:bin, binstr)
 ```
 
-wrap a batch of files
-
-``` ruby
-arr = [binstr1, binstr2]
-hesbin = Hessian2::TypeWrapper.new('[B', arr))
-```
+type wrapper support: 'L' / :long, 'I' / :int, 'B' / :bin, '[L' / [:long], '[I' / [:int], '[B' / [:bin]
 
 ## client
 

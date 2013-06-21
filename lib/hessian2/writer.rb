@@ -173,14 +173,14 @@ module Hessian2
         end
 
         if obj.is_a? Array
-          write_type_wrapped_array(obj, tstr, type.delete('[]'), refs, crefs, trefs)
+          write_type_wrapped_array(obj, tstr, type, refs, crefs, trefs)
         else
           case type
-          when 'L', 'Long', 'long'
+          when 'L'
             write_long(Integer(obj))
-          when 'I', 'Integer', 'int'
+          when 'I'
             write_int(Integer(obj))
-          when 'B', 'b'
+          when 'B'
             write_binary(obj)
           else
             if obj.is_a? Hash
@@ -416,6 +416,8 @@ module Hessian2
       idx = refs[obj.object_id]
       return write_ref(idx) if idx
 
+      attrs = obj.attributes
+
       refs[obj.object_id] = refs.size
       klass = obj.class.to_s
       cref = crefs[klass]
@@ -424,9 +426,9 @@ module Hessian2
         fields = cref.last
         str = ''
       else
-        fields = obj.instance_variables
+        fields = attrs.is_a?(Hash) ? attrs.keys : obj.instance_variables.map{|sym| sym.to_s[1..-1]}
         str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(fields.size)
-        fields.map{|sym| sym.to_s[1..-1]}.each do |f|
+        fields.each do |f|
           str << write_string(f)
         end
 
@@ -440,8 +442,14 @@ module Hessian2
         str << [ BC_OBJECT ].pack('C') << write_int(cidx)
       end
 
-      fields.each do |f|
-        str << write(obj.instance_variable_get(f), refs, crefs, trefs)
+      if attrs.is_a? Hash
+        fields.each do |f|
+          str << write(attrs[f], refs, crefs, trefs)
+        end
+      else
+        fields.each do |f|
+          str << write(obj.instance_variable_get(f.prepend('@')), refs, crefs, trefs)
+        end
       end
 
       str
@@ -481,15 +489,15 @@ module Hessian2
       end
 
       case eletype
-      when 'L', 'Long', 'long'
+      when 'L'
         arr.each do |ele|
           str << write_long(Integer(ele))
         end
-      when 'I', 'Integer', 'int'
+      when 'I'
         arr.each do |ele|
           str << write_int(Integer(ele))
         end
-      when 'B', 'b'
+      when 'B'
         arr.each do |ele|
           str << write_binary(ele)
         end
