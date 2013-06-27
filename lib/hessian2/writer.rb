@@ -417,7 +417,7 @@ module Hessian2
       idx = refs[obj.object_id]
       return write_ref(idx) if idx
 
-      attrs = obj.attributes
+      attrs = obj.instance_variable_get(:@attributes)
 
       refs[obj.object_id] = refs.size
       klass = obj.class.to_s
