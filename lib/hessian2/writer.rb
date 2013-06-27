@@ -1,4 +1,5 @@
 require 'hessian2/constants'
+require 'bigdecimal'
 
 module Hessian2
   module Writer
