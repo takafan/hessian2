@@ -448,7 +448,7 @@ module Hessian2
     end
 
     def read_double(bytes)
-      b64, b56, b48, b40, b32, b24, b16, b8 = bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next
+      # b64, b56, b48, b40, b32, b24, b16, b8 = bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next
       # bits = (b64 << 56) + (b56 << 48) + (b48 << 40) + (b40 << 32) + (b32 << 24) + (b24 << 16) + (b16 << 8) + b8
       # return Float::INFINITY if bits == 0x7_ff0_000_000_000_000
       # return -Float::INFINITY if bits == 0xf_ff0_000_000_000_000
@@ -457,7 +457,7 @@ module Hessian2
       # e = (bits >> 52) & 0x7ff
       # m = (e == 0) ? (bits & 0xf_fff_fff_fff_fff) << 1 : (bits & 0xf_fff_fff_fff_fff) | 0x10_000_000_000_000
       # (s * m * 2**(e - 1075)).to_f # maybe get a rational, so to_f
-      [ b64, b56, b48, b40, b32, b24, b16, b8 ].pack('C*').unpack('G') # faster than s * m * 2**(e - 1075)
+      [ bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next ].pack('C*').unpack('G') # faster than s * m * 2**(e - 1075)
     end
 
     def read_double_direct(bytes)
