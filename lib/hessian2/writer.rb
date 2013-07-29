@@ -30,8 +30,7 @@ module Hessian2
     def write(val, refs = {}, crefs = {}, trefs = {})
       case val
       when StructWrapper # ([)object to ([)values-array
-        obj = val.object
-        return write_nil if obj.nil?
+        objs = val.objects
 
         idx = refs[val.object_id]
         return write_ref(idx) if idx
@@ -40,48 +39,55 @@ module Hessian2
 
         klass = val.klass
         
-        if klass.is_a? Array
+        if klass.is_a?(Array) || objs.size > 1
           fields = klass.first.members
           arr = []
 
-          obj.each do |o|
-            ovals = []
-            if o.is_a? Hash
-              fields.each do |f|
-                ovals << (o[f] || o[f.to_s])
-              end
-            elsif o.instance_variable_get(:@attributes).is_a? Hash
-              attrs = o.attributes
-              fields.each do |f|
-                ovals << attrs[f.to_s]
-              end
+          objs.flatten.each do |o|
+            if o.nil?
+              arr << nil
             else
-              fields.each do |f|
-                ovals << o.instance_variable_get(f.to_s.prepend('@'))
+              ovals = []
+              if o.is_a? Hash
+                fields.each do |f|
+                  ovals << (o[f] || o[f.to_s])
+                end
+              elsif o.instance_variable_get(:@attributes).is_a? Hash
+                attrs = o.attributes
+                fields.each do |f|
+                  ovals << attrs[f.to_s]
+                end
+              else
+                fields.each do |f|
+                  ovals << o.instance_variable_get(f.to_s.prepend('@'))
+                end
               end
+              arr << ovals
             end
-            arr << ovals
           end
 
           write_array(arr, refs, crefs, trefs)
         else
-          objvals = []
-          if obj.is_a? Hash
+          o = objs.first
+          return write_nil if o.nil?
+
+          ovals = []
+          if o.is_a? Hash
             klass.members.each do |f|
-              objvals << (obj[f] || obj[f.to_s])
+              ovals << (o[f] || o[f.to_s])
             end
-          elsif obj.instance_variable_get(:@attributes).is_a? Hash
-            attrs = obj.attributes
+          elsif o.instance_variable_get(:@attributes).is_a? Hash
+            attrs = o.attributes
             klass.members.each do |f|
-              objvals << attrs[f.to_s]
+              ovals << attrs[f.to_s]
             end
           else
             klass.members.each do |f|
-              objvals << obj.instance_variable_get(f.to_s.prepend('@'))
+              ovals << o.instance_variable_get(f.to_s.prepend('@'))
             end
           end
-        
-          write_array(objvals, refs, crefs, trefs)
+
+          write_array(ovals, refs, crefs, trefs)
         end
       when ClassWrapper # class definition for statically typed languages
         obj = val.object

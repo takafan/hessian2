@@ -3,6 +3,7 @@
 Gemfile.lock
 doc/*
 pkg/*
+spec/*.yml
 test/*.data
 test/*.txt
 test/*.yml

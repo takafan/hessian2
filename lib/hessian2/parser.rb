@@ -457,7 +457,7 @@ module Hessian2
       # e = (bits >> 52) & 0x7ff
       # m = (e == 0) ? (bits & 0xf_fff_fff_fff_fff) << 1 : (bits & 0xf_fff_fff_fff_fff) | 0x10_000_000_000_000
       # (s * m * 2**(e - 1075)).to_f # maybe get a rational, so to_f
-      [ bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next ].pack('C*').unpack('G') # faster than s * m * 2**(e - 1075)
+      [ bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next ].pack('C*').unpack('G').first # faster than s * m * 2**(e - 1075)
     end
 
     def read_double_direct(bytes)
