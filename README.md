@@ -1,6 +1,6 @@
 # hessian2
 
-like json, additionally, 麻绳2 support structured data, with no schema.
+like json, additionally, 麻绳2 parse your object as a struct.
 
 hessian2 implements hessian 2.0 protocol. check [web services protocol](http://hessian.caucho.com/doc/hessian-ws.html) and [serialization protocol](http://hessian.caucho.com/doc/hessian-serialization.html).
 
@@ -10,7 +10,7 @@ yajl-ruby: json, fast.
 
 msgpack: binary, faster.
 
-protobuf: encoding structured data with schema.
+protobuf: encoding your object with schema.
 
 marshal: powerful, fast, but ruby only.
 
@@ -39,7 +39,7 @@ bin = Hessian2.write(monkey)
 
 ``` ruby
 monkey = Hessian2.parse(bin)
-#=> #<struct id=nil, born_at=2009-05-08 00:00:00 +0800, name="\u5927\u9E21", price=(7036170730324623/70368744177664)>
+#=> #<struct id=nil, born_at=2009-05-08 00:00:00 +0800, name="\u5927\u9E21", price=99.99>
 ```
 
 ## struct wrapper 
