@@ -2,7 +2,7 @@ require 'spec_helper'
 
 module Hessian2
   describe StructWrapper do
-		hash1 = { born_at: Time.new(2005, 3, 4), name: '阿门', price: 59.59 }
+		hash = { born_at: Time.new(2005, 3, 4), name: '阿门', price: 59.59 }
 		hash2 = { born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99 }
 
 		# monkey = Monkey.new(hash)
@@ -31,36 +31,36 @@ module Hessian2
 		it "should wrap nil" do
 			bin = Hessian2.write(Hessian2::StructWrapper.new(MonkeyStruct, nil))
 
-			monkey = Hessian2.parse(bin, MonkeyStruct)
-			expect(monkey).to eq(nil)
+			_monkey = Hessian2.parse(bin, MonkeyStruct)
+			expect(_monkey).to eq(nil)
 		end
 
 		it "should wrap hash" do
 			bin = Hessian2.write(Hessian2::StructWrapper.new(MonkeyStruct, hash))
 
-			monkey = Hessian2.parse(bin, MonkeyStruct)
-			expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+			_monkey = Hessian2.parse(bin, MonkeyStruct)
+			expect([ _monkey.born_at, _monkey.name, _monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
 		end
 
 		it "should wrap monkey" do
 			bin = Hessian2.write(Hessian2::StructWrapper.new(MonkeyStruct, Monkey.new(hash)))
 
-			monkey = Hessian2.parse(bin, MonkeyStruct)
-			expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+			_monkey = Hessian2.parse(bin, MonkeyStruct)
+			expect([ _monkey.born_at, _monkey.name, _monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
 		end
 
 		it "should wrap another monkey" do
 			bin = Hessian2.write(Hessian2::StructWrapper.new(MonkeyStruct, AnotherMonkey.new(hash)))
 
-			monkey = Hessian2.parse(bin, MonkeyStruct)
-			expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+			_monkey = Hessian2.parse(bin, MonkeyStruct)
+			expect([ _monkey.born_at, _monkey.name, _monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
 		end
 
 		it "should wrap hash array" do
 			bin = Hessian2.write(Hessian2::StructWrapper.new([MonkeyStruct], [hash, nil, hash2]))
 
-			monkeys = Hessian2.parse(bin, [MonkeyStruct])
-			expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+			_monkey1, _monkey2, _monkey3 = Hessian2.parse(bin, [MonkeyStruct])
+			expect([ _monkey1.born_at, _monkey1.name, _monkey1.price, _monkey2, _monkey3.born_at, _monkey3.name, _monkey3.price ]).to eq([ hash[:born_at], hash[:name], hash[:price], nil, hash2[:born_at], hash2[:name], hash2[:price] ])
 		end
 		
 

@@ -131,7 +131,7 @@ class MonkeyService
 end
 ```
 
-handle request in sinatra
+handle request
 
 ``` ruby
 post '/monkey' do
@@ -139,48 +139,12 @@ post '/monkey' do
 end
 ```
 
-## test
-
-```
-cd test/
-```
-
-start a service
-
-```
-ruby ./app.rb -o 0.0.0.0 -e production
-```
-
-or
-
-```
-thin start -p 4567 --threaded -e production 
-```
-
-test parser
-
-```
-ruby ./get.rb
-```
-
-test writer
-
-```
-ruby ./set.rb
-```
-
 ## todo
 
 supports packet and envelope
-
-rsa aes encryption
 
 write in c
 
 ## authors
 
 [takafan](http://hululuu.com)
-
-## license
-
-[Ruby License](http://www.ruby-lang.org/en/LICENSE.txt)

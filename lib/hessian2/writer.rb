@@ -30,7 +30,8 @@ module Hessian2
     def write(val, refs = {}, crefs = {}, trefs = {})
       case val
       when StructWrapper # ([)object to ([)values-array
-        objs = val.objects
+        obj = val.object
+        return write_nil if obj.nil?
 
         idx = refs[val.object_id]
         return write_ref(idx) if idx
@@ -39,11 +40,11 @@ module Hessian2
 
         klass = val.klass
         
-        if klass.is_a?(Array) || objs.size > 1
+        if klass.is_a?(Array)
           fields = klass.first.members
           arr = []
 
-          objs.flatten.each do |o|
+          obj.each do |o|
             if o.nil?
               arr << nil
             else
@@ -68,22 +69,19 @@ module Hessian2
 
           write_array(arr, refs, crefs, trefs)
         else
-          o = objs.first
-          return write_nil if o.nil?
-
           ovals = []
-          if o.is_a? Hash
+          if obj.is_a? Hash
             klass.members.each do |f|
-              ovals << (o[f] || o[f.to_s])
+              ovals << (obj[f] || obj[f.to_s])
             end
-          elsif o.instance_variable_get(:@attributes).is_a? Hash
-            attrs = o.attributes
+          elsif obj.instance_variable_get(:@attributes).is_a? Hash
+            attrs = obj.attributes
             klass.members.each do |f|
               ovals << attrs[f.to_s]
             end
           else
             klass.members.each do |f|
-              ovals << o.instance_variable_get(f.to_s.prepend('@'))
+              ovals << obj.instance_variable_get(f.to_s.prepend('@'))
             end
           end
 
