@@ -12,6 +12,7 @@ Gem::Specification.new do |s|
   s.description = %q{json encode fast, hessian write small.}
 
   s.rubyforge_project = "hessian2"
+  s.license = 'MIT'
 
   s.files         = `git ls-files`.split("\n")
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
