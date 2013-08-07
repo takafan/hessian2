@@ -38,10 +38,9 @@ module Hessian2
 
         refs[val.object_id] = refs.size
 
-        klass = val.klass
+        members = val.members
         
-        if klass.is_a?(Array)
-          fields = klass.first.members
+        if val.is_multi?
           arr = []
 
           obj.each do |o|
@@ -50,16 +49,16 @@ module Hessian2
             else
               ovals = []
               if o.is_a? Hash
-                fields.each do |f|
+                members.each do |f|
                   ovals << (o[f] || o[f.to_s])
                 end
               elsif o.instance_variable_get(:@attributes).is_a? Hash
                 attrs = o.attributes
-                fields.each do |f|
+                members.each do |f|
                   ovals << attrs[f.to_s]
                 end
               else
-                fields.each do |f|
+                members.each do |f|
                   ovals << o.instance_variable_get(f.to_s.prepend('@'))
                 end
               end
@@ -71,16 +70,16 @@ module Hessian2
         else
           ovals = []
           if obj.is_a? Hash
-            klass.members.each do |f|
+            members.each do |f|
               ovals << (obj[f] || obj[f.to_s])
             end
           elsif obj.instance_variable_get(:@attributes).is_a? Hash
             attrs = obj.attributes
-            klass.members.each do |f|
+            members.each do |f|
               ovals << attrs[f.to_s]
             end
           else
-            klass.members.each do |f|
+            members.each do |f|
               ovals << obj.instance_variable_get(f.to_s.prepend('@'))
             end
           end
