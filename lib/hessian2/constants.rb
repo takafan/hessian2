@@ -22,7 +22,7 @@ module Hessian2
   #=== Hessian 2.0 Serialization Protocol Bytecode map
   #
   #   x00 - x1f    # utf-8 string length 0-31
-  #   x20 - x2f    # binary data length 0-15
+  #   x20 - x2f    # binary data length 0-15*
   #   x30 - x33    # utf-8 string length 0-1023
   #   x34 - x37    # binary data length 0-1023
   #   x38 - x3f    # three-octet compact long (-x40000 to x3ffff)
@@ -61,7 +61,7 @@ module Hessian2
   #   x60 - x6f    # object with direct type
   #   x70 - x77    # fixed list with direct length
   #   x78 - x7f    # fixed untyped list with direct length
-  #   x80 - xbf    # one-octet compact int (-x10 to x3f, x90 is 0)
+  #   x80 - xbf    # one-octet compact int (-x10 to x2f, x90 is 0)*
   #   xc0 - xcf    # two-octet compact int (-x800 to x7ff)
   #   xd0 - xd7    # three-octet compact int (-x40000 to x3ffff)
   #   xd8 - xef    # one-octet compact long (-x8 to xf, xe0 is 0)

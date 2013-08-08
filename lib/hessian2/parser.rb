@@ -302,9 +302,9 @@ module Hessian2
       if bc < 0x80 # 0xxxxxxx
         bc
       elsif bc & 0xe0 == 0xc0 # 110xxxxx 10xxxxxx
-        ((bc & 0x1f) << 6) + (bytes.next & 0x3f)
+        (bc & 0x1f) * 64 + (bytes.next & 0x3f)
       elsif bc & 0xf0 == 0xe0 # 1110xxxx 10xxxxxx 10xxxxxx
-        ((bc & 0x0f) << 12) + ((bytes.next & 0x3f) << 6) + (bytes.next & 0x3f)
+        (bc & 0x0f) * 4096 + (bytes.next & 0x3f) * 64 + (bytes.next & 0x3f)
       else
         raise sprintf("bad utf-8 encoding at %#x", bc)
       end
@@ -428,7 +428,7 @@ module Hessian2
     end
 
     def read_binary(bytes)
-      read_binary_string(bytes, (bytes.next << 8) + bytes.next)
+      read_binary_string(bytes, bytes.next * 256 + bytes.next)
     end
 
     def read_binary_string(bytes, len)
@@ -443,18 +443,19 @@ module Hessian2
     end
 
     def read_date_minute(bytes)
-      val = (bytes.next << 24) + (bytes.next << 16) + (bytes.next << 8) + bytes.next
+      val = bytes.next * 16777216 + bytes.next * 65536 + bytes.next * 256 + bytes.next
       Time.at(val * 60)
     end
 
     def read_double(bytes)
       # b64, b56, b48, b40, b32, b24, b16, b8 = bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next
-      # bits = (b64 << 56) + (b56 << 48) + (b48 << 40) + (b40 << 32) + (b32 << 24) + (b24 << 16) + (b16 << 8) + b8
+      # bits = b64 * 72057594037927936 + b56 * 281474976710656 + b48 * 1099511627776 + b40 * 4294967296 \
+      #   + b32 * 16777216 + b24 * 65536 + b16 * 256 + b8
       # return Float::INFINITY if bits == 0x7_ff0_000_000_000_000
       # return -Float::INFINITY if bits == 0xf_ff0_000_000_000_000
       # return Float::NAN if (bits >= 0x7_ff0_000_000_000_001 && bits <= 0x7_fff_fff_fff_fff_fff) or (bits >= 0xf_ff0_000_000_000_001 && bits <= 0xf_fff_fff_fff_fff_fff)
       # s = b64 < 0x80 ? 1 : -1
-      # e = (bits >> 52) & 0x7ff
+      # e = (bits / 4503599627370496) & 0x7ff
       # m = (e == 0) ? (bits & 0xf_fff_fff_fff_fff) << 1 : (bits & 0xf_fff_fff_fff_fff) | 0x10_000_000_000_000
       # (s * m * 2**(e - 1075)).to_f # maybe get a rational, so to_f
       [ bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next ].pack('C*').unpack('G').first # faster than s * m * 2**(e - 1075)
@@ -468,9 +469,9 @@ module Hessian2
     def read_double_short(bytes)
       b16, b8 = bytes.next, bytes.next
       if b16 < 0x80
-        (b16 << 8) + b8
+        b16 * 256 + b8
       else
-        -(((0xff - b16) << 8) + 0xff - b8 + 1)
+        -((0xff - b16) * 256 + 0xff - b8 + 1)
       end
     end
 
@@ -481,9 +482,9 @@ module Hessian2
     def read_int(bytes)
       b32, b24, b16, b8 = bytes.next, bytes.next, bytes.next, bytes.next
       if b32 < 0x80
-        (b32 << 24) + (b24 << 16) + (b16 << 8) + b8
+        b32 * 16777216 + b24 * 65536 + b16 * 256 + b8
       else
-        -(((0xff - b32) << 24) + ((0xff - b24) << 16) + ((0xff - b16) << 8) + 0xff - b8 + 1)
+        -((0xff - b32) * 16777216 + (0xff - b24) * 65536 + (0xff - b16) * 256 + 0xff - b8 + 1)
       end
     end
 
@@ -492,21 +493,21 @@ module Hessian2
     end
 
     def read_int_byte_zero(bytes, bc)
-      ((bc - BC_INT_BYTE_ZERO) << 8) + bytes.next
+      (bc - BC_INT_BYTE_ZERO) * 256 + bytes.next
     end
 
     def read_int_short_zero(bytes, bc)
-      ((bc - BC_INT_SHORT_ZERO) << 16) + (bytes.next << 8) + bytes.next
+      (bc - BC_INT_SHORT_ZERO) * 65536 + bytes.next * 256 + bytes.next
     end
 
     def read_long(bytes)
       b64, b56, b48, b40, b32, b24, b16, b8 = bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next
       if b64 < 0x80
-        (b64 << 56) + (b56 << 48) + (b48 << 40) + (b40 << 32) \
-          + (b32 << 24) + (b24 << 16) + (b16 << 8) + b8
+        b64 * 72057594037927936 + b56 * 281474976710656 + b48 * 1099511627776 + b40 * 4294967296 \
+          + b32 * 16777216 + b24 * 65536 + b16 * 256 + b8
       else
-        -(((0xff - b64) << 56) + ((0xff - b56) << 48) + ((0xff - b48) << 40) + ((0xff - b40) << 32) \
-          + ((0xff - b32) << 24) + ((0xff - b24) << 16) + ((0xff - b16) << 8) + 0xff - b8 + 1)
+        -((0xff - b64) * 72057594037927936 + (0xff - b56) * 281474976710656 + (0xff - b48) * 1099511627776 + (0xff - b40) * 4294967296 \
+          + (0xff - b32) * 16777216 + (0xff - b24) * 65536 + (0xff - b16) * 256 + 0xff - b8 + 1)
       end
     end
 
@@ -515,11 +516,11 @@ module Hessian2
     end
 
     def read_long_byte_zero(bytes, bc)
-      ((bc - BC_LONG_BYTE_ZERO) << 8) + bytes.next
+      (bc - BC_LONG_BYTE_ZERO) * 256 + bytes.next
     end
 
     def read_long_short_zero(bytes, bc)
-      ((bc - BC_LONG_SHORT_ZERO) << 16) + (bytes.next << 8) + bytes.next
+      (bc - BC_LONG_SHORT_ZERO) * 65536 + bytes.next * 256 + bytes.next
     end
 
     def read_string_direct(bytes, bc)
@@ -527,7 +528,7 @@ module Hessian2
     end
 
     def read_string_short(bytes, bc)
-      read_utf8_string(bytes, ((bc - BC_STRING_SHORT) << 8) + bytes.next)
+      read_utf8_string(bytes, (bc - BC_STRING_SHORT) * 256 + bytes.next)
     end
 
     def read_string_chunk(bytes)
@@ -543,7 +544,7 @@ module Hessian2
     end
 
     def read_string(bytes)
-      read_utf8_string(bytes, (bytes.next << 8) + bytes.next)
+      read_utf8_string(bytes, bytes.next * 256 + bytes.next)
     end
 
     def read_utf8_string(bytes, len)
