@@ -4,7 +4,7 @@ module Hessian2
   describe Writer do
     context "when boolean" do
       
-      it "should write true" do
+      it "should write true ::= 'T'" do
         val = true
         bin = Hessian2.write(val)
 
@@ -12,7 +12,7 @@ module Hessian2
         expect(Hessian2.parse(bin)).to eq(val)
       end
 
-      it "should write false" do
+      it "should write false ::= 'F'" do
         val = false
         bin = Hessian2.write(val)
 

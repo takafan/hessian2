@@ -4,8 +4,8 @@ module Hessian2
   describe Writer do
     context "when binary" do
       
-      it "should write binary data length 0-15" do
-        [ 0, 15 ].each do |len|
+      it "should write binary data length 0-15 ::= [x20-x2f] <binary-data>" do
+        (0..15).to_a.each do |len|
           val = ['b' * len].pack('a*')
           bin = Hessian2.write(Hessian2::TypeWrapper.new(:bin, val))
 
@@ -15,8 +15,8 @@ module Hessian2
         end
       end
 
-      it "should write binary data length 0-1023" do
-        [ 16, 1023 ].each do |len|
+      it "should write binary data length 0-1023 ::= [x34-x37] <binary-data>" do
+        [ 16, 256, 512, 1023 ].each do |len|
           val = ['b' * len].pack('a*')
           bin = Hessian2.write(Hessian2::TypeWrapper.new(:bin, val))
 
@@ -27,7 +27,7 @@ module Hessian2
         end
       end
 
-      it "should write binary" do
+      it "should write 8-bit binary data non-final chunk ('A') ::= x41 b1 b0 <binary-data> and 8-bit binary data final chunk ('B') ::= 'B' b1 b0 <binary-data>" do
         val = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
         bin = Hessian2.write(Hessian2::TypeWrapper.new(:bin, val))
         chunks = val.size / 0x8000

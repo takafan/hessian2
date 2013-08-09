@@ -466,7 +466,7 @@ module Hessian2
     def write_string(str)
       chunks, i, len = '', 0, str.size
       while len > 0x8000
-        chunks << [ BC_STRING_CHUNK, 0x8000 ].pack('Cn') << print_string(str[i, i += 0x8000])
+        chunks << [ BC_STRING_CHUNK, 0x8000 ].pack('Cn') << print_string(str[i...(i += 0x8000)])
         len -= 0x8000
       end
 

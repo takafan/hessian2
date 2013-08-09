@@ -21,7 +21,7 @@ module Hessian2
   #
   #=== Hessian 2.0 Serialization Protocol Bytecode map
   #
-  #   x00 - x1f    # utf-8 string length 0-31
+  #   x00 - x1f    # utf-8 string length 0-31*
   #   x20 - x2f    # binary data length 0-15*
   #   x30 - x33    # utf-8 string length 0-1023
   #   x34 - x37    # binary data length 0-1023
