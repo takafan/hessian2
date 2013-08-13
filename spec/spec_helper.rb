@@ -11,7 +11,6 @@ MonkeyStruct = Struct.new(:born_at, :id, :name, :price)
 options = YAML.load_file(File.expand_path('../database.yml', __FILE__))
 ActiveRecord::Base.establish_connection(options)
 ActiveRecord::Base.default_timezone = :local
-ActiveRecord::Base.time_zone_aware_attributes = true
 
 class Monkey < ActiveRecord::Base; end
 

@@ -2,7 +2,7 @@ require File.expand_path('../spec_helper', __FILE__)
 
 module Hessian2
   describe StructWrapper do
-		hash = { born_at: Time.new(2005, 3, 4), name: '阿门', price: 59.59 }
+		hash = { born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99 }
 
 		it "should raise error" do
 			expect(lambda{ Hessian2::StructWrapper.new(MonkeyStruct) }).to raise_error
@@ -21,7 +21,6 @@ module Hessian2
 			monkey = Hessian2.parse(bin, MonkeyStruct)
 			expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
 			
-
 			bin2 = Hessian2.write(Hessian2::StructWrapper.new('MonkeyStruct', hash))
 
 			monkey2 = Hessian2.parse(bin2, 'MonkeyStruct')
