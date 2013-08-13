@@ -2,7 +2,7 @@
 
 like json, additionally, 麻绳2 parse your object as a struct.
 
-hessian2 implements hessian 2.0 protocol. check [web services protocol](http://hessian.caucho.com/doc/hessian-ws.html) and [serialization protocol](http://hessian.caucho.com/doc/hessian-serialization.html).
+hessian2 implements hessian 2.0 protocol. look [web services protocol](http://hessian.caucho.com/doc/hessian-ws.html) and [serialization protocol](http://hessian.caucho.com/doc/hessian-serialization.html).
 
 ## comparing
 
@@ -29,7 +29,8 @@ require 'hessian2'
 ```
 
 ``` ruby
-monkey = Monkey.new(born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99)
+attributes = { born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99 }
+monkey = Monkey.new(attributes)
 #=> #<Monkey id: nil, born_at: "2009-05-08 00:00:00", name: "\u5927\u9E21", price: #<BigDecimal:2b7c568,'0.9998999999 999999E2',27(45)>>
 
 bin = Hessian2.write(monkey)
@@ -104,6 +105,14 @@ hesbin = Hessian2::TypeWrapper.new(:bin, binstr)
 ```
 
 there are types: 'L', 'I', 'B', '[L', '[I', '[B', :long, :int, :bin, [:long], [:int], [:bin]
+
+## :symbolize_keys parser option
+
+``` ruby
+bin = Hessian2.write(attributes)
+hash = Hessian2.parse(bin, nil, symbolize_keys: true)
+#=> {:born_at=>2009-05-08 00:00:00 +0800, :name=>"\u5927\u9E21", :price=>99.99}
+```
 
 ## client
 

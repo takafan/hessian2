@@ -24,7 +24,7 @@ module Hessian2
 
 			bin2 = Hessian2.write(Hessian2::StructWrapper.new('MonkeyStruct', hash))
 
-			monkey2 = Hessian2.parse(bin2, MonkeyStruct)
+			monkey2 = Hessian2.parse(bin2, 'MonkeyStruct')
 			expect([ monkey2.born_at, monkey2.name, monkey2.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
 		end
 
@@ -43,14 +43,15 @@ module Hessian2
 		end
 
 		it "should wrap array" do
-			bin = Hessian2.write(Hessian2::StructWrapper.new([MonkeyStruct], [nil, hash, Monkey.new(hash), AnotherMonkey.new(hash)]))
+			arr = [nil, hash, Monkey.new(hash), AnotherMonkey.new(hash)]
+			bin = Hessian2.write(Hessian2::StructWrapper.new([MonkeyStruct], arr))
 			
 			monkey, monkey2, monkey3, monkey4 = Hessian2.parse(bin, [MonkeyStruct])
 			expect([ monkey, monkey2.born_at, monkey2.name, monkey2.price, monkey3.born_at, monkey3.name, monkey3.price, monkey4.born_at, monkey4.name, monkey4.price ]).to eq([ nil, hash[:born_at], hash[:name], hash[:price], hash[:born_at], hash[:name], hash[:price], hash[:born_at], hash[:name], hash[:price] ])
 			
-			bin2 = Hessian2.write(Hessian2::StructWrapper.new('[MonkeyStruct', [nil, hash, Monkey.new(hash), AnotherMonkey.new(hash)]))
+			bin2 = Hessian2.write(Hessian2::StructWrapper.new('[MonkeyStruct', arr))
 			
-			monkey5, monkey6, monkey7, monkey8 = Hessian2.parse(bin2, [MonkeyStruct])
+			monkey5, monkey6, monkey7, monkey8 = Hessian2.parse(bin2, '[MonkeyStruct')
 			expect([ monkey5, monkey6.born_at, monkey6.name, monkey6.price, monkey7.born_at, monkey7.name, monkey7.price, monkey8.born_at, monkey8.name, monkey8.price ]).to eq([ nil, hash[:born_at], hash[:name], hash[:price], hash[:born_at], hash[:name], hash[:price], hash[:born_at], hash[:name], hash[:price] ])
 		end
 		

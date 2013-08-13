@@ -18,7 +18,7 @@ module Hessian2
         method = parse_string(bytes)
         refs, cdefs = [], []
         args = [].tap do |arr|
-          parse_int(bytes).times{ arr << parse_bytes(bytes, nil, refs, cdefs) }
+          parse_int(bytes).times{ arr << parse_bytes(bytes, nil, {}, refs, cdefs) }
         end
         [ method, *args ]
       when 0x46 # fault ('F')
@@ -32,11 +32,11 @@ module Hessian2
       end
     end
 
-    def parse(data, klass = nil)
-      parse_bytes(data.each_byte, klass)
+    def parse(data, klass = nil, options = {})
+      parse_bytes(data.each_byte, klass, options)
     end
 
-    def parse_bytes(bytes, klass = nil, refs = [], cdefs = [])
+    def parse_bytes(bytes, klass = nil, options = {}, refs = [], cdefs = [])
       bc = bytes.next
       case bc
       when 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -71,7 +71,7 @@ module Hessian2
         end
         cdefs << Struct.new(*fields.map{|f| f.to_sym})
 
-        parse_bytes(bytes, klass, refs, cdefs)
+        parse_bytes(bytes, klass, options, refs, cdefs)
       when 0x44 # 64-bit IEEE encoded double ('D')
         read_double(bytes)
       when 0x46 # boolean false ('F')
@@ -80,11 +80,11 @@ module Hessian2
         val = {}
         refs << val # store a value reference first
         while bytes.peek != BC_END
-          val[parse_bytes(bytes, klass, refs, cdefs)] = parse_bytes(bytes, klass, refs, cdefs)
+          val[parse_bytes(bytes, klass, options, refs, cdefs)] = parse_bytes(bytes, klass, options, refs, cdefs)
         end
 
         bytes.next
-        val
+        options[:symbolize_keys] ? val.inject({}){|memo, (k, v)| memo[k.to_sym] = v; memo} : val
       when 0x49 # 32-bit signed integer ('I')
         read_int(bytes)
       when 0x4a # 64-bit UTC millisecond date
@@ -94,15 +94,15 @@ module Hessian2
       when 0x4c # 64-bit signed long integer ('L')
         read_long(bytes)
       when 0x4d # map with type ('M')
-        parse_type(bytes) # skip type
+        parse_type(bytes)
         val = {}
         refs << val
         while bytes.peek != BC_END
-          val[parse_bytes(bytes, klass, refs, cdefs)] = parse_bytes(bytes, klass, refs, cdefs)
+          val[parse_bytes(bytes, klass, options, refs, cdefs)] = parse_bytes(bytes, klass, options, refs, cdefs)
         end
 
         bytes.next
-        val
+        options[:symbolize_keys] ? val.inject({}){|memo, (k, v)| memo[k.to_sym] = v; memo} : val
       when 0x4e # null ('N')
         nil
       when 0x4f # object instance ('O')
@@ -110,7 +110,7 @@ module Hessian2
         val = cdef.new
         refs << val # store a value reference first
         val.members.each do |sym|
-          val[sym] = parse_bytes(bytes, klass, refs, cdefs)
+          val[sym] = parse_bytes(bytes, klass, options, refs, cdefs)
         end
 
         val
@@ -124,20 +124,22 @@ module Hessian2
         true
       when 0x55 # variable-length list/vector ('U')
         parse_type(bytes)
-        if klass && !klass.is_a?(Array) # parse to struct
+
+        is_struct, klass = parse_klass(klass)
+
+        if is_struct
           arr = []
           while bytes.peek != BC_END
-            arr << parse_bytes(bytes, nil, refs, cdefs)
+            arr << parse_bytes(bytes, nil, options, refs, cdefs)
           end
 
           val = klass.new(*arr)
           refs << val
         else
-          klass = klass ? klass.first : nil
           val = []
           refs << val # store a value reference first
           while bytes.peek != BC_END
-            val << parse_bytes(bytes, klass, refs, cdefs)
+            val << parse_bytes(bytes, klass, options, refs, cdefs)
           end
         end
 
@@ -145,59 +147,63 @@ module Hessian2
         val
       when 0x56 # fixed-length list/vector ('V')
         parse_type(bytes)
-        if klass && !klass.is_a?(Array) # parse to struct
+
+        is_struct, klass = parse_klass(klass)
+
+        if is_struct
           arr = []
           parse_int(bytes).times do
-            arr << parse_bytes(bytes, nil, refs, cdefs)
+            arr << parse_bytes(bytes, nil, options, refs, cdefs)
           end
 
           val = klass.new(*arr)
           refs << val
         else
-          klass = klass ? klass.first : nil
           val = []
           refs << val # store a value reference
           parse_int(bytes).times do
-            val << parse_bytes(bytes, klass, refs, cdefs)
+            val << parse_bytes(bytes, klass, options, refs, cdefs)
           end
         end
 
         val
       when 0x57 # variable-length untyped list/vector ('W')
-        if klass && !klass.is_a?(Array) # parse to struct
+        is_struct, klass = parse_klass(klass)
+
+        if is_struct
           arr = []
           while bytes.peek != BC_END
-            arr << parse_bytes(bytes, nil, refs, cdefs)
+            arr << parse_bytes(bytes, nil, options, refs, cdefs)
           end
 
           val = klass.new(*arr)
           refs << val
         else
-          klass = klass ? klass.first : nil
           val = []
           refs << val # store a value reference first
           while bytes.peek != BC_END
-            val << parse_bytes(bytes, klass, refs, cdefs)
+            val << parse_bytes(bytes, klass, options, refs, cdefs)
           end
         end
 
         bytes.next
         val
       when 0x58 # fixed-length untyped list/vector ('X')
-        if klass && !klass.is_a?(Array) # parse to struct
+        is_struct, klass = parse_klass(klass)
+
+        if is_struct
           arr = []
           parse_int(bytes).times do
-            arr << parse_bytes(bytes, nil, refs, cdefs)
+            arr << parse_bytes(bytes, nil, options, refs, cdefs)
           end
 
           val = klass.new(*arr)
           refs << val
         else
-          klass = klass ? klass.first : nil
           val = []
           refs << val # store a value reference first
           parse_int(bytes).times do
-            val << parse_bytes(bytes, klass, refs, cdefs)
+            val << parse_bytes(bytes, klass, options, refs, cdefs)
           end
         end
 
@@ -221,47 +227,50 @@ module Hessian2
         val = cdef.new
         refs << val # store a value reference first
         val.members.each do |sym|
-          val[sym] = parse_bytes(bytes, klass, refs, cdefs)
+          val[sym] = parse_bytes(bytes, klass, options, refs, cdefs)
         end
 
         val
       when 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77
         # 0x70 - 0x77 fixed list with direct length
         parse_type(bytes)
-        if klass && !klass.is_a?(Array) # parse to struct
+
+        is_struct, klass = parse_klass(klass)
+
+        if is_struct
           arr = []
           (bc - BC_LIST_DIRECT).times do
-            arr << parse_bytes(bytes, nil, refs, cdefs)
+            arr << parse_bytes(bytes, nil, options, refs, cdefs)
           end
 
           val = klass.new(*arr)
           refs << val
         else
-          klass = klass ? klass.first : nil
           val = []
           refs << val # store a value reference first
           (bc - BC_LIST_DIRECT).times do
-            val << parse_bytes(bytes, klass, refs, cdefs)
+            val << parse_bytes(bytes, klass, options, refs, cdefs)
           end
         end
 
         val
       when 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f
         # 0x78 - 0x7f fixed untyped list with direct length
-        if klass && !klass.is_a?(Array) # parse to struct
+        is_struct, klass = parse_klass(klass)
+
+        if is_struct
           arr = []
           (bc - BC_LIST_DIRECT_UNTYPED).times do
-            arr << parse_bytes(bytes, nil, refs, cdefs)
+            arr << parse_bytes(bytes, nil, options, refs, cdefs)
           end
 
           val = klass.new(*arr)
           refs << val
         else
-          klass = klass ? klass.first : nil
           val = []
           refs << val # store a value reference first
           (bc - BC_LIST_DIRECT_UNTYPED).times do
-            val << parse_bytes(bytes, klass, refs, cdefs)
+            val << parse_bytes(bytes, klass, options, refs, cdefs)
           end
         end
 
@@ -403,6 +412,27 @@ module Hessian2
       else
         raise sprintf("%#x is not a type", bc)
       end
+    end
+
+    def parse_klass(klass)
+      if klass.nil?
+        is_struct = false
+      elsif klass.is_a?(Array)
+        is_struct = false
+        klass = klass.first
+      elsif klass.is_a?(String)
+        if klass.include?('[')
+          is_struct = false
+          klass = Kernel.const_get(klass.delete('[]'))
+        else
+          is_struct = true
+          klass = Kernel.const_get(klass)
+        end
+      else
+        is_struct = true
+      end
+
+      [ is_struct, klass ]
     end
 
     private

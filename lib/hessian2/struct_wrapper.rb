@@ -7,7 +7,7 @@ module Hessian2
     		@is_multi = true
     		@members = klass.first.members
     	elsif klass.is_a?(String)
-    		if klass[0] == '['
+    		if klass.include?('[')
     			@is_multi = true
     			@members = Kernel.const_get(klass.delete('[]')).members
     		else
