@@ -37,18 +37,44 @@ module Hessian2
         expect(Hessian2.parse(bin)).to eq(nil)
       end
 
-      # it "should write object instance ('O') ::= 'O' int value*" do
-      #   bin = Hessian2.write(hash)
+      it "should write object instance ('O') ::= 'O' int value*" do
+        arr = []
+        17.times do |i|
+          arr << Hessian2::ClassWrapper.new("com.sun.java.Monkey#{i}", hash)
+        end
+        bin = Hessian2.write(arr)
 
-      #   bytes = bin.each_byte
-      #   expect(bin[0]).to eq('H')
-      #   expect(bin[-1]).to eq('Z')
-      #   map = Hessian2.parse(bin)
-      #   expect([ map['born_at'], map['name'], map['price'] ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
-      #   map2 = Hessian2.parse(bin, nil, symbolize_keys: true)
-      #   puts map2.inspect
-      #   expect(map2).to eq(hash)
-      # end
+        bytes = bin.each_byte
+
+        # skip x58 int
+        bytes.next
+        Hessian2.parse_int(bytes)
+
+        # skip top 16
+        16.times do
+          bytes.next
+          Hessian2.parse_string(bytes)
+          Hessian2.parse_int(bytes)
+          4.times{ Hessian2.parse_string(bytes) }
+          bytes.next
+          4.times{ Hessian2.parse_bytes(bytes) }
+        end
+
+        # skip 17th class definition
+        bytes.next
+        Hessian2.parse_string(bytes)
+        Hessian2.parse_int(bytes)
+        4.times{ Hessian2.parse_string(bytes) }
+
+        expect([ bytes.next ].pack('C')).to eq('O')
+        expect(Hessian2.parse_int(bytes)).to eq(16)
+
+        monkeys = Hessian2.parse(bin)
+        expect(monkeys.size).to eq(17)
+        monkeys.each do |monkey|
+          expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+        end
+      end
 
     end
   end
