@@ -15,9 +15,11 @@ module Hessian2
       out
     end
 
+
     def reply(val)
       [ 'H', '2', '0', 'R' ].pack('ahha') << write(val)
     end
+
 
     def write_fault(e)
       val = {
@@ -27,135 +29,15 @@ module Hessian2
       [ 'F' ].pack('a') << write_hash(val)
     end
 
+
     def write(val, refs = {}, crefs = {}, trefs = {})
       case val
-      when StructWrapper # ([)object to ([)values-array
-        return write_nil unless val.values
-
-        idx = refs[val.object_id]
-        return write_ref(idx) if idx
-
-        refs[val.object_id] = refs.size
-
-        write_array(val.values, refs, crefs, trefs)
+      when StructWrapper # object to values-array
+        write_struct_wrapper(val, refs, crefs, trefs)
       when ClassWrapper # class definition for statically typed languages
-        obj = val.object
-        return write_nil unless obj
-
-        idx = refs[val.object_id]
-        return write_ref(idx) if idx
-
-        refs[val.object_id] = refs.size
-
-        is_array = val.klass.include?('[')
-        if is_array
-          type = val.klass
-          if trefs.include?(type)
-            tstr = write_int(trefs[type])
-          else
-            trefs[type] = trefs.size # store a type
-            tstr = write_string(type)
-          end
-          return [ BC_LIST_DIRECT ].pack('C') << tstr if obj.size == 0
-        end
-
-        klass = val.klass.delete('[]')
-        cref = crefs[klass]
-        if cref
-          cidx = cref.first
-          fields = cref.last
-          str = ''
-        else
-          fields, fstr = get_fields(is_array ? obj.select{|x| x}.first : obj)
-          
-          str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(fields.size) << fstr
-          cidx = crefs.size
-          crefs[klass] = [cidx, fields] # store a class definition
-        end
-
-        if cidx <= OBJECT_DIRECT_MAX
-          cstr = [ BC_OBJECT_DIRECT + cidx ].pack('C')
-        else
-          cstr = [ BC_OBJECT ].pack('C') << write_int(cidx)
-        end
-
-        if is_array
-          # str << write_class_wrapped_array(obj, tstr, cstr, fields, refs, crefs, trefs)
-          len = obj.size
-          if len <= LIST_DIRECT_MAX # [x70-77] type value*
-            str << [ BC_LIST_DIRECT + len ].pack('C') << tstr
-          else  # 'V' type int value*
-            str << [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
-          end
-
-          obj.each do |ele|
-            str << write_class_wrapped_object(ele, cstr, fields, refs, crefs, trefs)
-
-            # if ele
-            #   idx = refs[ele.object_id]
-            #   if idx
-            #     str << write_ref(idx)
-            #   else
-            #     refs[ele.object_id] = refs.size
-            #     str << cstr
-
-            #     if ele.is_a?(Hash)
-            #       fields.each{|f| str << write(ele[f] || ele[f.to_s], refs, crefs, trefs) }
-            #     elsif ele.instance_variable_get(:@attributes).is_a?(Hash)
-            #       fields.each{|f| str << write(ele.attributes[f.to_s], refs, crefs, trefs) }
-            #     else
-            #       fields.each{|f| str << write(ele.instance_variable_get(f.to_s.prepend('@')), refs, crefs, trefs) }
-            #     end
-            #   end
-            # else
-            #   str << write_nil
-            # end
-          end
-        # elsif obj.is_a?(Hash)
-        #   str << write_class_wrapped_hash(obj, cstr, fields, refs, crefs, trefs)
-        # elsif obj.instance_variable_get(:@attributes).is_a?(Hash)
-        #   str << write_class_wrapped_hash(obj.attributes, cstr, fields, refs, crefs, trefs)
-        else
-          str << write_class_wrapped_object(obj, cstr, fields, refs, crefs, trefs)
-        end
-
-        # puts str.inspect
-        str
+        write_class_wrapper(val, refs, crefs, trefs)
       when TypeWrapper
-        obj = val.object
-        return write_nil if obj.nil?
-
-        idx = refs[val.object_id]
-        return write_ref(idx) if idx
-
-        refs[val.object_id] = refs.size
-
-        type = val.hessian_type
-        if trefs.include?(type)
-          tstr = write_int(trefs[type])
-        else
-          trefs[type] = trefs.size
-          tstr = write_string(type)
-        end
-
-        if type.include?('[')
-          write_type_wrapped_array(obj, tstr, type, refs, crefs, trefs)
-        else
-          case type
-          when 'L'
-            write_long(Integer(obj))
-          when 'I'
-            write_int(Integer(obj))
-          when 'B'
-            write_binary(obj)
-          else
-            if obj.is_a?(Hash)
-              write_type_wrapped_hash(obj, tstr, refs, crefs, trefs)
-            else
-              write(obj, refs, crefs, trefs)
-            end
-          end
-        end
+        write_type_wrapper(val, refs, crefs, trefs)
       when TrueClass
         [ BC_TRUE ].pack('C')
       when FalseClass
@@ -167,32 +49,7 @@ module Hessian2
           [ BC_DATE, val.to_i * 1000 + val.usec / 1000 ].pack('CQ>') # date
         end
       when Float, BigDecimal
-        case val.infinite?
-        when 1
-          return [ BC_DOUBLE, Float::INFINITY ].pack('CG')
-        when -1
-          return [ BC_DOUBLE, -Float::INFINITY ].pack('CG')
-        else
-          return [ BC_DOUBLE, Float::NAN ].pack('CG') if val.nan?
-          return [ BC_DOUBLE_ZERO ].pack('C') if val.zero? # double zero
-          return [ BC_DOUBLE_ONE ].pack('C') if val == 1 # double one
-
-          ival = val.to_i
-          if ival == val
-            return [ BC_DOUBLE_BYTE, ival ].pack('Cc') if ival >= -0x80 && ival <= 0x7f # double octet
-            return [ BC_DOUBLE_SHORT, (ival >> 8), ival ].pack('Ccc') if ival >= -0x8000 && ival <= 0x7fff # double short
-          end
-
-          mval = val * 1000
-          if mval.finite?
-            mills = mval.to_i
-            if mills >= -0x80_000_000 && mills <= 0x7f_fff_fff && 0.001 * mills == val
-              return [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
-            end
-          end
-
-          [ BC_DOUBLE, val ].pack('CG') # double
-        end
+        write_float(val)
       when Fixnum
         write_int(val)
       when Array
@@ -216,6 +73,7 @@ module Hessian2
       end
     end
 
+
     def print_string(str)
       return str.b if String.method_defined?(:b)
 
@@ -237,6 +95,7 @@ module Hessian2
       arr.pack('C*')
     end
 
+
     def write_array(arr, refs = {}, crefs = {}, trefs = {})
       idx = refs[arr.object_id]
       return write_ref(idx) if idx
@@ -255,6 +114,7 @@ module Hessian2
 
       str
     end
+
 
     def write_binary(str)
       chunks, i, len = [], 0, str.size
@@ -275,63 +135,94 @@ module Hessian2
       chunks.join
     end
 
-    def write_class_wrapped_array(arr, tstr, cstr, fields, refs = {}, crefs = {}, trefs = {})
-      len = arr.size
-      if len <= LIST_DIRECT_MAX # [x70-77] type value*
-        str = [ BC_LIST_DIRECT + len ].pack('C') << tstr
-      else  # 'V' type int value*
-        str = [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
-      end
 
-      arr.each do |ele|
-        if ele
-          idx = refs[ele.object_id]
-          if idx
-            str << write_ref(idx)
-          else
-            refs[ele.object_id] = refs.size
-            str << cstr
-            if ele.is_a?(Hash)
-              fields.each{|f| str << write(ele[f] || ele[f.to_s], refs, crefs, trefs) }
-            elsif ele.instance_variable_get(:@attributes).is_a?(Hash)
-              fields.each{|f| str << write(ele.attributes[f.to_s], refs, crefs, trefs) }
-            else
-              fields.each{|f| str << write(ele.instance_variable_get(f.to_s.prepend('@')), refs, crefs, trefs) }
-            end
-          end
-        else
-          str << write_nil
-        end
-      end
-
-      str
-    end
-
-    def write_class_wrapped_hash(hash, cstr, fields, refs = {}, crefs = {}, trefs = {})
-      str = cstr
-      fields.each{|f| str << write(hash[f] || hash[f.to_s], refs, crefs, trefs) }
-
-      str
-    end
-
-    def write_class_wrapped_object(obj, cstr, fields, refs = {}, crefs = {}, trefs = {})
+    def write_class_wrapper(val, refs, crefs, trefs)
+      obj = val.object
       return write_nil unless obj
-      
-      idx = refs[obj.object_id]
+
+      idx = refs[val.object_id]
       return write_ref(idx) if idx
 
-      refs[obj.object_id] = refs.size
-      str = cstr
-      if obj.is_a?(Hash)
-        fields.each{|f| str << write(obj[f] || obj[f.to_s], refs, crefs, trefs) }
-      elsif obj.instance_variable_get(:@attributes).is_a?(Hash)
-        fields.each{|f| str << write(obj.attributes[f.to_s], refs, crefs, trefs) }
+      refs[val.object_id] = refs.size
+
+      is_array = val.klass.include?('[')
+      if is_array
+        type = val.klass
+        if trefs.include?(type)
+          tstr = write_int(trefs[type])
+        else
+          trefs[type] = trefs.size # store a type
+          tstr = write_string(type)
+        end
+        return [ BC_LIST_DIRECT ].pack('C') << tstr if obj.size == 0
+      end
+
+      klass = val.klass.delete('[]')
+      cref = crefs[klass]
+      if cref
+        cidx = cref.first
+        fields = cref.last
+        str = ''
       else
-        fields.each{|f| str << write(obj.instance_variable_get(f.to_s.prepend('@')), refs, crefs, trefs) }
+        fields, fstr = write_fields(is_array ? obj.select{|x| x}.first : obj)
+        
+        str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(fields.size) << fstr
+        cidx = crefs.size
+        crefs[klass] = [cidx, fields] # store a class definition
+      end
+
+      if cidx <= OBJECT_DIRECT_MAX
+        cstr = [ BC_OBJECT_DIRECT + cidx ].pack('C')
+      else
+        cstr = [ BC_OBJECT ].pack('C') << write_int(cidx)
+      end
+
+      if is_array
+        len = obj.size
+        if len <= LIST_DIRECT_MAX # [x70-77] type value*
+          str << [ BC_LIST_DIRECT + len ].pack('C') << tstr
+        else  # 'V' type int value*
+          str << [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
+        end
+
+        obj.each{|ele| str << write_values(ele, cstr, fields, refs, crefs, trefs) }
+      else
+        str << write_values(obj, cstr, fields, refs, crefs, trefs)
       end
 
       str
     end
+
+
+    def write_float(val)
+      case val.infinite?
+      when 1
+        return [ BC_DOUBLE, Float::INFINITY ].pack('CG')
+      when -1
+        return [ BC_DOUBLE, -Float::INFINITY ].pack('CG')
+      else
+        return [ BC_DOUBLE, Float::NAN ].pack('CG') if val.nan?
+        return [ BC_DOUBLE_ZERO ].pack('C') if val.zero? # double zero
+        return [ BC_DOUBLE_ONE ].pack('C') if val == 1 # double one
+
+        ival = val.to_i
+        if ival == val
+          return [ BC_DOUBLE_BYTE, ival ].pack('Cc') if ival >= -0x80 && ival <= 0x7f # double octet
+          return [ BC_DOUBLE_SHORT, (ival >> 8), ival ].pack('Ccc') if ival >= -0x8000 && ival <= 0x7fff # double short
+        end
+
+        mval = val * 1000
+        if mval.finite?
+          mills = mval.to_i
+          if mills >= -0x80_000_000 && mills <= 0x7f_fff_fff && 0.001 * mills == val
+            return [ BC_DOUBLE_MILL, mills ].pack('Cl>') # double mill
+          end
+        end
+
+        [ BC_DOUBLE, val ].pack('CG') # double
+      end
+    end
+
 
     def write_hash(hash, refs = {}, crefs = {}, trefs = {})
       idx = refs[hash.object_id]
@@ -347,6 +238,7 @@ module Hessian2
       str << [ BC_END ].pack('C')
     end
 
+
     def write_int(val)
       if val >= INT_DIRECT_MIN && val <= INT_DIRECT_MAX # single octet integers
         [ BC_INT_ZERO + val ].pack('c')
@@ -360,6 +252,7 @@ module Hessian2
         [ BC_LONG, val ].pack('Cq>')
       end
     end
+
 
     def write_long(val)
       if val >= LONG_DIRECT_MIN && val <= LONG_DIRECT_MAX # single octet longs
@@ -375,56 +268,64 @@ module Hessian2
       end
     end
 
+
     def write_nil
       [ BC_NULL ].pack('C')
     end
 
-    def write_object(obj, refs = {}, crefs = {}, trefs = {})
-      idx = refs[obj.object_id]
+
+    def write_object(object, refs = {}, crefs = {}, trefs = {})
+      return write_nil unless object
+
+      idx = refs[object.object_id]
       return write_ref(idx) if idx
 
-      attrs = obj.instance_variable_get(:@attributes)
+      refs[object.object_id] = refs.size
 
-      refs[obj.object_id] = refs.size
-      klass = obj.class.to_s
+      klass = object.class.to_s
       cref = crefs[klass]
       if cref
         cidx = cref.first
         fields = cref.last
         str = ''
       else
-        fields = attrs.is_a?(Hash) ? attrs.keys : obj.instance_variables.map{|sym| sym.to_s[1..-1]}
-        str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(fields.size)
-        fields.each do |f|
-          str << write_string(f)
-        end
+        fields, fstr = write_fields(object)
 
         cidx = crefs.size
         crefs[klass] = [cidx, fields]
+
+        str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(fields.size) << fstr
       end
       
       if cidx <= OBJECT_DIRECT_MAX
-        str << [ BC_OBJECT_DIRECT + cidx ].pack('C')
+        cstr = [ BC_OBJECT_DIRECT + cidx ].pack('C')
       else
-        str << [ BC_OBJECT ].pack('C') << write_int(cidx)
+        cstr = [ BC_OBJECT ].pack('C') << write_int(cidx)
       end
 
-      if attrs.is_a?(Hash)
-        fields.each do |f|
-          str << write(attrs[f], refs, crefs, trefs)
-        end
-      else
-        fields.each do |f|
-          str << write(obj.instance_variable_get(f.prepend('@')), refs, crefs, trefs)
-        end
-      end
+      str << write_values(object, cstr, fields, refs, crefs, trefs)
 
       str
     end
 
+
     def write_ref(val)
       [ BC_REF ].pack('C') << write_int(val)
     end
+
+
+    def write_struct_wrapper(val, refs, crefs, trefs)
+      values = val.values
+      return write_nil unless values
+
+      idx = refs[val.object_id]
+      return write_ref(idx) if idx
+
+      refs[val.object_id] = refs.size
+
+      write_array(values, refs, crefs, trefs)
+    end
+
 
     def write_string(str)
       chunks, i, len = '', 0, str.size
@@ -444,6 +345,7 @@ module Hessian2
 
       chunks << print_string(final)
     end
+
 
     def write_type_wrapped_array(arr, tstr, eletype, refs = {}, crefs = {}, trefs = {})
       len = arr.size
@@ -493,6 +395,7 @@ module Hessian2
       str
     end
 
+
     def write_type_wrapped_hash(hash, tstr, refs = {}, crefs = {}, trefs = {})
       str = [ BC_MAP ].pack('C') << tstr
       hash.each do |k, v|
@@ -503,9 +406,48 @@ module Hessian2
       str << [ BC_END ].pack('C')
     end
 
+
+    def write_type_wrapper(val, refs, crefs, trefs)
+      obj = val.object
+      return write_nil if obj.nil?
+
+      idx = refs[val.object_id]
+      return write_ref(idx) if idx
+
+      refs[val.object_id] = refs.size
+
+      type = val.hessian_type
+      if trefs.include?(type)
+        tstr = write_int(trefs[type])
+      else
+        trefs[type] = trefs.size
+        tstr = write_string(type)
+      end
+
+      if type.include?('[')
+        write_type_wrapped_array(obj, tstr, type, refs, crefs, trefs)
+      else
+        case type
+        when 'L'
+          write_long(Integer(obj))
+        when 'I'
+          write_int(Integer(obj))
+        when 'B'
+          write_binary(obj)
+        else
+          if obj.is_a?(Hash)
+            write_type_wrapped_hash(obj, tstr, refs, crefs, trefs)
+          else
+            write(obj, refs, crefs, trefs)
+          end
+        end
+      end
+    end
+
+
     private
 
-    def get_fields(object)
+    def write_fields(object)
       fields = []
       fstr = ''
       if object.is_a?(Hash)
@@ -527,6 +469,21 @@ module Hessian2
       end
 
       [ fields, fstr ]
+    end
+
+
+    def write_values(object, cstr, fields, refs, crefs, trefs)
+      return write_nil unless object
+      vstr = ''
+      if object.is_a?(Hash)
+        fields.each{|f| vstr << write(object[f] || object[f.to_s], refs, crefs, trefs) }
+      elsif object.instance_variable_get(:@attributes).is_a?(Hash)
+        fields.each{|f| vstr << write(object.attributes[f.to_s], refs, crefs, trefs) }
+      else
+        fields.each{|f| vstr << write(object.instance_variable_get(f.to_s.prepend('@')), refs, crefs, trefs) }
+      end
+
+      cstr + vstr
     end
 
   end

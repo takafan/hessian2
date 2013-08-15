@@ -32,9 +32,11 @@ module Hessian2
       end
     end
 
+
     def parse(data, klass = nil, options = {})
       parse_bytes(data.each_byte, klass, options)
     end
+
 
     def parse_bytes(bytes, klass = nil, options = {}, refs = [], cdefs = [])
       bc = bytes.next
@@ -306,6 +308,7 @@ module Hessian2
       end
     end
 
+
     def parse_utf8_char(bytes)
       bc = bytes.next
       if bc < 0x80 # 0xxxxxxx
@@ -318,6 +321,7 @@ module Hessian2
         raise sprintf("bad utf-8 encoding at %#x", bc)
       end
     end
+
 
     def parse_binary(bytes)
       bc = bytes.next
@@ -335,6 +339,7 @@ module Hessian2
         raise sprintf("%#x is not a binary", bc)
       end
     end
+
 
     def parse_int(bytes)
       bc = bytes.next
@@ -360,6 +365,7 @@ module Hessian2
       end
     end
 
+
     def parse_string(bytes)
       bc = bytes.next
       case bc
@@ -378,6 +384,7 @@ module Hessian2
         raise sprintf("%#x is not a string", bc)
       end
     end
+
 
     def parse_type(bytes)
       bc = bytes.next
@@ -414,6 +421,7 @@ module Hessian2
       end
     end
 
+
     def parse_klass(klass)
       if klass.nil?
         is_struct = false
@@ -435,15 +443,18 @@ module Hessian2
       [ is_struct, klass ]
     end
 
+
     private
 
     def read_binary_direct(bytes, bc)
       read_binary_string(bytes, bc - BC_BINARY_DIRECT)
     end
 
+
     def read_binary_short(bytes, bc)
       read_binary_string(bytes, ((bc - BC_BINARY_SHORT) << 8) + bytes.next)
     end
+
 
     def read_binary_chunk(bytes)
       chunks = []
@@ -457,9 +468,11 @@ module Hessian2
       chunks.join
     end
 
+
     def read_binary(bytes)
       read_binary_string(bytes, bytes.next * 256 + bytes.next)
     end
+
 
     def read_binary_string(bytes, len)
       [].tap do |arr|
@@ -467,15 +480,18 @@ module Hessian2
       end.pack('C*')
     end
 
+
     def read_date(bytes)
       val = read_long(bytes)
       Time.at(val / 1000, val % 1000 * 1000)
     end
 
+
     def read_date_minute(bytes)
       val = bytes.next * 16777216 + bytes.next * 65536 + bytes.next * 256 + bytes.next
       Time.at(val * 60)
     end
+
 
     def read_double(bytes)
       # b64, b56, b48, b40, b32, b24, b16, b8 = bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next
@@ -491,10 +507,12 @@ module Hessian2
       [ bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next ].pack('C*').unpack('G').first # faster than s * m * 2**(e - 1075)
     end
 
+
     def read_double_direct(bytes)
       bc = bytes.next
       bc < 0x80 ? bc : -(0xff - bc + 1)
     end
+
 
     def read_double_short(bytes)
       b16, b8 = bytes.next, bytes.next
@@ -505,9 +523,11 @@ module Hessian2
       end
     end
 
+
     def read_double_mill(bytes)
       0.001 * read_int(bytes)
     end
+
 
     def read_int(bytes)
       b32, b24, b16, b8 = bytes.next, bytes.next, bytes.next, bytes.next
@@ -518,17 +538,21 @@ module Hessian2
       end
     end
 
+
     def read_int_zero(bc)
       bc - BC_INT_ZERO
     end
+
 
     def read_int_byte_zero(bytes, bc)
       (bc - BC_INT_BYTE_ZERO) * 256 + bytes.next
     end
 
+
     def read_int_short_zero(bytes, bc)
       (bc - BC_INT_SHORT_ZERO) * 65536 + bytes.next * 256 + bytes.next
     end
+
 
     def read_long(bytes)
       b64, b56, b48, b40, b32, b24, b16, b8 = bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next, bytes.next
@@ -541,25 +565,31 @@ module Hessian2
       end
     end
 
+
     def read_long_zero(bc)
       bc - BC_LONG_ZERO
     end
+
 
     def read_long_byte_zero(bytes, bc)
       (bc - BC_LONG_BYTE_ZERO) * 256 + bytes.next
     end
 
+
     def read_long_short_zero(bytes, bc)
       (bc - BC_LONG_SHORT_ZERO) * 65536 + bytes.next * 256 + bytes.next
     end
+
 
     def read_string_direct(bytes, bc)
       read_utf8_string(bytes, bc - BC_STRING_DIRECT)
     end
 
+
     def read_string_short(bytes, bc)
       read_utf8_string(bytes, (bc - BC_STRING_SHORT) * 256 + bytes.next)
     end
+
 
     def read_string_chunk(bytes)
       chunks = []
@@ -573,9 +603,11 @@ module Hessian2
       chunks.join
     end
 
+
     def read_string(bytes)
       read_utf8_string(bytes, bytes.next * 256 + bytes.next)
     end
+
 
     def read_utf8_string(bytes, len)
       [].tap do |chars|

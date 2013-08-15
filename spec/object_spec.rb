@@ -19,22 +19,6 @@ module Hessian2
           expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
         end
 
-        [ hash, Monkey.new(hash), AnotherMonkey.new(hash) ].each do |val|
-          bin = Hessian2.write(Hessian2::ClassWrapper.new('com.sun.java.Monkey', val))
-
-          bytes = bin.each_byte
-          expect([ bytes.next ].pack('C')).to eq('C')
-          expect(Hessian2.parse_string(bytes)).to eq('com.sun.java.Monkey')
-          expect(Hessian2.parse_int(bytes)).to eq(4)
-          4.times{ Hessian2.parse_string(bytes) }
-          expect(bytes.next - 0x60).to eq(0)
-          monkey = Hessian2.parse(bin)
-          expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
-        end
-
-        bin = Hessian2.write(Hessian2::ClassWrapper.new('com.sun.java.Monkey', nil))
-        expect(bin).to eq('N')
-        expect(Hessian2.parse(bin)).to eq(nil)
       end
 
       it "should write object instance ('O') ::= 'O' int value*" do
