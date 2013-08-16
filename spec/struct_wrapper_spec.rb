@@ -8,12 +8,14 @@ module Hessian2
 			expect(lambda{ Hessian2::StructWrapper.new(MonkeyStruct) }).to raise_error
 		end
 
+
 		it "should wrap nil" do
 			bin = Hessian2.write(Hessian2::StructWrapper.new(MonkeyStruct, nil))
 
 			monkey = Hessian2.parse(bin, MonkeyStruct)
 			expect(monkey).to eq(nil)
 		end
+
 
 		it "should wrap hash, monkey, another monkey" do
 			[ MonkeyStruct, 'MonkeyStruct' ].each do |klass|
@@ -25,6 +27,7 @@ module Hessian2
 				end
 			end
 		end
+
 
 		it "should wrap array" do
 			[ [MonkeyStruct], '[MonkeyStruct' ].each do |klass|

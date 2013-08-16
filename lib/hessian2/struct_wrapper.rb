@@ -33,6 +33,7 @@ module Hessian2
       end
     end
 
+
     private
 
     def get_values(members, object)

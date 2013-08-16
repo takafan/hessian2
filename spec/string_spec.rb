@@ -15,6 +15,7 @@ module Hessian2
         end
       end
 
+
       it "should write utf-8 string length 0-1023 ::= [x30-x33] b0 <utf8-data>" do
         [ 33, 256, 512, 1023 ].each do |len|
           val = '字' * len
@@ -26,6 +27,7 @@ module Hessian2
           expect(Hessian2.parse(bin)).to eq(val)
         end
       end
+
 
       it "should write utf-8 string non-final chunk ('R') ::= x52 b1 b0 <utf8-data> and utf-8 string final chunk ('S') ::= S b1 b0 <utf8-data>" do
         val = '字' * 0x10400

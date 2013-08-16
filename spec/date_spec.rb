@@ -13,6 +13,7 @@ module Hessian2
         expect(Hessian2.parse(bin)).to eq(val)
       end
 
+
       it "should write 64-bit UTC millisecond date ::= x4a b7 b6 b5 b4 b3 b2 b1 b0" do
         val = Time.new(2008, 8, 8, 8, 8, 8)
         bin = Hessian2.write(val)

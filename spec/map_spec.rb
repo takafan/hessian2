@@ -18,6 +18,7 @@ module Hessian2
         expect(map2).to eq(hash)
       end
 
+
       it "should write untyped map ::= 'H' (value value)* 'Z'" do
         bin = Hessian2.write(hash)
 

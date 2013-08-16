@@ -474,6 +474,7 @@ module Hessian2
 
     def write_values(object, cstr, fields, refs, crefs, trefs)
       return write_nil unless object
+      
       vstr = ''
       if object.is_a?(Hash)
         fields.each{|f| vstr << write(object[f] || object[f.to_s], refs, crefs, trefs) }

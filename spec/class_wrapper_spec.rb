@@ -8,12 +8,14 @@ module Hessian2
 			expect(lambda{ Hessian2::ClassWrapper.new('com.sun.java.Monkey') }).to raise_error
 		end
 
+
 		it "should wrap nil" do
 			bin = Hessian2.write(Hessian2::ClassWrapper.new('com.sun.java.Monkey', nil))
 
 			expect(bin).to eq('N')
 			expect(Hessian2.parse(bin)).to eq(nil)
 		end
+
 
 		it "should wrap hash, monkey, another monkey" do
 			bin = Hessian2.write(Hessian2::ClassWrapper.new('com.sun.java.Monkey', hash))
@@ -31,6 +33,7 @@ module Hessian2
 				expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
 			end
 		end
+
 
 		it "should wrap array" do
 			arr = [nil, hash, Monkey.new(hash), AnotherMonkey.new(hash)]

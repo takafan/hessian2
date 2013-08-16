@@ -8,6 +8,7 @@ module Hessian2
         # not implemented
       end
 
+
       it "should write fixed-length list/vector ('V') ::= 'V' type int value*" do
         type = '[int'
         val = (1..9).to_a
@@ -20,9 +21,11 @@ module Hessian2
         expect(Hessian2.parse(bin)).to eq(val)
       end
 
+
       it "should write variable-length untyped list/vector ('W') ::= x57 value* 'Z'" do
         # not implemented
       end
+
 
       it "should write fixed-length untyped list/vector ('X') ::= x58 int value*" do
         val = [ Time.new(2005, 3, 4), '阿门', 59.59 ] * 3
@@ -33,6 +36,7 @@ module Hessian2
         expect(Hessian2.parse_int(bytes)).to eq(val.size)
         expect(Hessian2.parse(bin)).to eq(val)
       end
+
 
       it "should write fixed list with direct length ::= [x70-77] type value*" do
         type = '[int'
@@ -46,6 +50,7 @@ module Hessian2
           expect(Hessian2.parse(bin)).to eq(val)
         end
       end
+
 
       it "should write fixed untyped list with direct length ::= [x78-7f] value*" do
         8.times do |i|

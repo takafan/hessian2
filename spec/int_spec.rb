@@ -13,6 +13,7 @@ module Hessian2
         end
       end
 
+
       it "should write two-octet compact int (-x800 to x7ff) ::= [xc0-xcf] b0" do
         -0x800.step(0x7ff, 0x100).select{|x| !(-0x10..0x2f).include?(x)}.each do |val|
           bin = Hessian2.write(val)
@@ -23,6 +24,7 @@ module Hessian2
         end
       end
 
+
       it "should write three-octet compact int (-x40000 to x3ffff) ::= [xd0-xd7] b1 b0" do
         -0x40000.step(0x3ffff, 0x10000).select{|x| !(-0x800..0x7ff).include?(x)}.each do |val|
           bin = Hessian2.write(val)
@@ -32,6 +34,7 @@ module Hessian2
           expect(Hessian2.parse(bin)).to eq(val)
         end
       end
+
 
       it "should write 32-bit signed integer ('I') ::= 'I' b3 b2 b1 b0" do
         fixnum_max = 2 ** (0.size * 8 - 2) - 1

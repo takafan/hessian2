@@ -12,6 +12,7 @@ module Hessian2
         expect(Hessian2.parse(bin)).to eq(val)
       end
 
+
       it "should write false ::= 'F'" do
         val = false
         bin = Hessian2.write(val)

@@ -2,22 +2,27 @@ require File.expand_path('../spec_helper', __FILE__)
 
 module Hessian2
   describe Writer do
-    context "when object" do
+    context "when ref" do
       hash = { id: nil, born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99 }
 
-      it "should write object type definition ('C') ::= 'C' string int string* and object with direct type ::= [x60-x6f] value*" do
-        [ 'Monkey', 'AnotherMonkey' ].each do |klass|
-          bin = Hessian2.write(Kernel.const_get(klass).new(hash))
+      it "should write reference to map/list/object - integer ('Q') ::= x51 int" do
+        monkey1 = Monkey.new(hash)
+        monkey2 = Hessian2::ClassWrapper.new("com.sun.java.Monkey", hash)
+        monkeys = [ monkey1, monkey2 ]
 
-          bytes = bin.each_byte
-          expect([ bytes.next ].pack('C')).to eq('C')
-          expect(Hessian2.parse_string(bytes)).to eq(klass)
-          expect(Hessian2.parse_int(bytes)).to eq(4)
-          4.times{ Hessian2.parse_string(bytes) }
-          expect(bytes.next - 0x60).to eq(0)
-          monkey = Hessian2.parse(bin)
-          expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
-        end
+        arr = [ hash, monkey1, monkey2, monkeys ] * 2
+        
+        bin = Hessian2.write(arr)
+
+        bytes = bin.each_byte
+        expect([ bytes.next ].pack('C')).to eq('C')
+        expect(Hessian2.parse_string(bytes)).to eq(klass)
+        expect(Hessian2.parse_int(bytes)).to eq(4)
+        4.times{ Hessian2.parse_string(bytes) }
+        expect(bytes.next - 0x60).to eq(0)
+        monkey = Hessian2.parse(bin)
+        expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+        
       end
 
 

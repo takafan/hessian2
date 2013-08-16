@@ -1,10 +1,12 @@
 module Hessian2
   class TypeWrapper
     attr_accessor :hessian_type, :object
+
     def initialize(hessian_type, object)
       @hessian_type = hessian_type.is_a?(Array) ? ('[' + unify_type(hessian_type.first)) : unify_type(hessian_type)
       @object = object
     end
+
 
     private
 
@@ -20,5 +22,6 @@ module Hessian2
         hessian_type
       end
     end
+    
   end
 end

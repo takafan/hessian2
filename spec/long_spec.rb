@@ -13,6 +13,7 @@ module Hessian2
         end
       end
 
+
       it "should write two-octet compact long (-x800 to x7ff, xf8 is 0) ::= [xf0-xff] b0" do
         -0x800.step(0x7ff, 0x100).select{|x| !(-0x08..0x0f).include?(x)}.each do |val|
           bin = Hessian2.write(Hessian2::TypeWrapper.new(:long, val))
@@ -23,6 +24,7 @@ module Hessian2
         end
       end
 
+
       it "should write three-octet compact long (-x40000 to x3ffff) ::= [x38-x3f] b1 b0" do
         -0x40000.step(0x3ffff, 0x10000).select{|x| !(-0x800..0x7ff).include?(x)}.each do |val|
           bin = Hessian2.write(Hessian2::TypeWrapper.new(:long, val))
@@ -32,6 +34,7 @@ module Hessian2
           expect(Hessian2.parse(bin)).to eq(val)
         end
       end
+
 
       it "should write long encoded as 32-bit int ('Y') ::= x59 b3 b2 b1 b0" do
         fixnum_max = 2 ** (0.size * 8 - 2) - 1
@@ -45,6 +48,7 @@ module Hessian2
           expect(Hessian2.parse(bin)).to eq(val)
         end
       end
+
 
       it "should write 64-bit signed long integer ('L') ::= 'L' b7 b6 b5 b4 b3 b2 b1 b0" do
         fixnum_max = 2 ** (0.size * 8 - 2) - 1

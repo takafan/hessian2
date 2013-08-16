@@ -15,11 +15,14 @@ module Hessian2
       @proxy = proxy
     end
 
+
     def method_missing(id, *args)
       return invoke(id.id2name, args)
     end
 
+
     private
+    
     def invoke(method, args)
       req = Net::HTTP::Post.new(@path, { 'Content-Type' => 'application/binary' })
       req.basic_auth @user, @password if @user

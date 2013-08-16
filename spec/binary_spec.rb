@@ -15,6 +15,7 @@ module Hessian2
         end
       end
 
+
       it "should write binary data length 0-1023 ::= [x34-x37] <binary-data>" do
         [ 16, 256, 512, 1023 ].each do |len|
           val = ['b' * len].pack('a*')
@@ -26,6 +27,7 @@ module Hessian2
           expect(Hessian2.parse(bin)).to eq(val)
         end
       end
+
 
       it "should write 8-bit binary data non-final chunk ('A') ::= x41 b1 b0 <binary-data> and 8-bit binary data final chunk ('B') ::= 'B' b1 b0 <binary-data>" do
         val = IO.binread(File.expand_path("../Lighthouse.jpg", __FILE__))
