@@ -79,14 +79,7 @@ module Hessian2
       when 0x46 # boolean false ('F')
         false
       when 0x48 # untyped map ('H')
-        val = {}
-        refs << val # store a value reference first
-        while bytes.peek != BC_END
-          val[parse_bytes(bytes, klass, options, refs, cdefs)] = parse_bytes(bytes, klass, options, refs, cdefs)
-        end
-
-        bytes.next
-        options[:symbolize_keys] ? val.inject({}){|memo, (k, v)| memo[k.to_sym] = v; memo} : val
+        read_hash(bytes, klass, options, refs, cdefs)
       when 0x49 # 32-bit signed integer ('I')
         read_int(bytes)
       when 0x4a # 64-bit UTC millisecond date
@@ -97,14 +90,7 @@ module Hessian2
         read_long(bytes)
       when 0x4d # map with type ('M')
         parse_type(bytes)
-        val = {}
-        refs << val
-        while bytes.peek != BC_END
-          val[parse_bytes(bytes, klass, options, refs, cdefs)] = parse_bytes(bytes, klass, options, refs, cdefs)
-        end
-
-        bytes.next
-        options[:symbolize_keys] ? val.inject({}){|memo, (k, v)| memo[k.to_sym] = v; memo} : val
+        read_hash(bytes, klass, options, refs, cdefs)
       when 0x4e # null ('N')
         nil
       when 0x4f # object instance ('O')
@@ -127,7 +113,7 @@ module Hessian2
       when 0x55 # variable-length list/vector ('U')
         parse_type(bytes)
 
-        is_struct, klass = parse_klass(klass)
+        is_struct, klass = read_klass(klass)
 
         if is_struct
           arr = []
@@ -150,7 +136,7 @@ module Hessian2
       when 0x56 # fixed-length list/vector ('V')
         parse_type(bytes)
 
-        is_struct, klass = parse_klass(klass)
+        is_struct, klass = read_klass(klass)
 
         if is_struct
           arr = []
@@ -170,7 +156,7 @@ module Hessian2
 
         val
       when 0x57 # variable-length untyped list/vector ('W')
-        is_struct, klass = parse_klass(klass)
+        is_struct, klass = read_klass(klass)
 
         if is_struct
           arr = []
@@ -191,7 +177,7 @@ module Hessian2
         bytes.next
         val
       when 0x58 # fixed-length untyped list/vector ('X')
-        is_struct, klass = parse_klass(klass)
+        is_struct, klass = read_klass(klass)
 
         if is_struct
           arr = []
@@ -237,7 +223,7 @@ module Hessian2
         # 0x70 - 0x77 fixed list with direct length
         parse_type(bytes)
 
-        is_struct, klass = parse_klass(klass)
+        is_struct, klass = read_klass(klass)
 
         if is_struct
           arr = []
@@ -258,7 +244,7 @@ module Hessian2
         val
       when 0x78, 0x79, 0x7a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f
         # 0x78 - 0x7f fixed untyped list with direct length
-        is_struct, klass = parse_klass(klass)
+        is_struct, klass = read_klass(klass)
 
         if is_struct
           arr = []
@@ -422,28 +408,6 @@ module Hessian2
     end
 
 
-    def parse_klass(klass)
-      if klass.nil?
-        is_struct = false
-      elsif klass.is_a?(Array)
-        is_struct = false
-        klass = klass.first
-      elsif klass.is_a?(String)
-        if klass.include?('[')
-          is_struct = false
-          klass = Kernel.const_get(klass.delete('[]'))
-        else
-          is_struct = true
-          klass = Kernel.const_get(klass)
-        end
-      else
-        is_struct = true
-      end
-
-      [ is_struct, klass ]
-    end
-
-
     private
 
     def read_binary_direct(bytes, bc)
@@ -529,6 +493,20 @@ module Hessian2
     end
 
 
+    def read_hash(bytes, klass, options, refs, cdefs)
+      val = {}
+      refs << val
+      if options[:symbolize_keys]
+        val[parse_bytes(bytes, klass, options, refs, cdefs).to_sym] = parse_bytes(bytes, klass, options, refs, cdefs) while bytes.peek != BC_END
+      else
+        val[parse_bytes(bytes, klass, options, refs, cdefs)] = parse_bytes(bytes, klass, options, refs, cdefs) while bytes.peek != BC_END
+      end
+      bytes.next
+
+      val
+    end
+
+
     def read_int(bytes)
       b32, b24, b16, b8 = bytes.next, bytes.next, bytes.next, bytes.next
       if b32 < 0x80
@@ -551,6 +529,28 @@ module Hessian2
 
     def read_int_short_zero(bytes, bc)
       (bc - BC_INT_SHORT_ZERO) * 65536 + bytes.next * 256 + bytes.next
+    end
+
+
+    def read_klass(klass)
+      if klass.nil?
+        is_struct = false
+      elsif klass.is_a?(Array)
+        is_struct = false
+        klass = klass.first
+      elsif klass.is_a?(String)
+        if klass.include?('[')
+          is_struct = false
+          klass = Kernel.const_get(klass.delete('[]'))
+        else
+          is_struct = true
+          klass = Kernel.const_get(klass)
+        end
+      else
+        is_struct = true
+      end
+
+      [ is_struct, klass ]
     end
 
 

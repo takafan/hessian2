@@ -6,6 +6,7 @@ module Hessian2
 
 		it "should raise error" do
 			expect(lambda{ Hessian2::ClassWrapper.new('com.sun.java.Monkey') }).to raise_error
+			expect(lambda{ Hessian2::ClassWrapper.new('com.sun.java.Monkey', 59) }).to raise_error
 		end
 
 
@@ -29,8 +30,8 @@ module Hessian2
 	      expect(Hessian2.parse_int(bytes)).to eq(4)
 	      4.times{ Hessian2.parse_string(bytes) }
 	      expect(bytes.next - 0x60).to eq(0)
-				monkey = Hessian2.parse(bin)
-				expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+				_monkey = Hessian2.parse(bin)
+				expect([ _monkey.born_at, _monkey.name, _monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
 			end
 		end
 
@@ -39,10 +40,10 @@ module Hessian2
 			arr = [nil, hash, Monkey.new(hash), AnotherMonkey.new(hash)]
 			bin = Hessian2.write(Hessian2::ClassWrapper.new('[com.sun.java.Monkey', arr))
 			
-			monkey1, monkey2, monkey3, monkey4 = Hessian2.parse(bin)
-			expect(monkey1).to eq(nil)
-			[ monkey2, monkey3, monkey4 ].each do |monkey|
-				expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+			_monkey1, _monkey2, _monkey3, _monkey4 = Hessian2.parse(bin)
+			expect(_monkey1).to eq(nil)
+			[ _monkey2, _monkey3, _monkey4 ].each do |_monkey|
+				expect([ _monkey.born_at, _monkey.name, _monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
 			end
 			
 		end

@@ -6,63 +6,29 @@ module Hessian2
       hash = { id: nil, born_at: Time.new(2009, 5, 8), name: '大鸡', price: 99.99 }
 
       it "should write reference to map/list/object - integer ('Q') ::= x51 int" do
-        monkey1 = Monkey.new(hash)
+        monkey = Monkey.new(hash)
         monkey2 = Hessian2::ClassWrapper.new("com.sun.java.Monkey", hash)
-        monkeys = [ monkey1, monkey2 ]
-
-        arr = [ hash, monkey1, monkey2, monkeys ] * 2
+        monkeys = [ monkey, monkey2 ]
+        arr = [ hash, monkey, monkey2, monkeys ] * 2
         
         bin = Hessian2.write(arr)
 
-        bytes = bin.each_byte
-        expect([ bytes.next ].pack('C')).to eq('C')
-        expect(Hessian2.parse_string(bytes)).to eq(klass)
-        expect(Hessian2.parse_int(bytes)).to eq(4)
-        4.times{ Hessian2.parse_string(bytes) }
-        expect(bytes.next - 0x60).to eq(0)
-        monkey = Hessian2.parse(bin)
-        expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+        _hash1, _monkey1, _monkey2, _monkeys1, _hash2, _monkey3, _monkey4, _monkeys2 = Hessian2.parse(bin, nil, symbolize_keys: true)
+
+        [ _hash1, _hash2 ].each do |_hash|
+          expect([ _hash[:born_at], _hash[:name], _hash[:price] ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+        end
+
+        [ _monkey1, _monkey2, _monkey3, _monkey4 ].each do |_monkey|
+          expect([ _monkey.born_at, _monkey.name, _monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+        end
+
+        [ _monkeys1, _monkeys2 ].each do |_monkeys|
+          _monkeys.each do |_monkey|
+            expect([ _monkey.born_at, _monkey.name, _monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+          end
+        end
         
-      end
-
-
-      it "should write object instance ('O') ::= 'O' int value*" do
-        arr = []
-        17.times do |i|
-          arr << Hessian2::ClassWrapper.new("com.sun.java.Monkey#{i}", hash)
-        end
-        bin = Hessian2.write(arr)
-
-        bytes = bin.each_byte
-
-        # skip x58 int
-        bytes.next
-        Hessian2.parse_int(bytes)
-
-        # skip top 16
-        16.times do
-          bytes.next
-          Hessian2.parse_string(bytes)
-          Hessian2.parse_int(bytes)
-          4.times{ Hessian2.parse_string(bytes) }
-          bytes.next
-          4.times{ Hessian2.parse_bytes(bytes) }
-        end
-
-        # skip 17th class definition
-        bytes.next
-        Hessian2.parse_string(bytes)
-        Hessian2.parse_int(bytes)
-        4.times{ Hessian2.parse_string(bytes) }
-
-        expect([ bytes.next ].pack('C')).to eq('O')
-        expect(Hessian2.parse_int(bytes)).to eq(16)
-
-        monkeys = Hessian2.parse(bin)
-        expect(monkeys.size).to eq(17)
-        monkeys.each do |monkey|
-          expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
-        end
       end
 
     end

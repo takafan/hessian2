@@ -15,8 +15,8 @@ module Hessian2
           expect(Hessian2.parse_int(bytes)).to eq(4)
           4.times{ Hessian2.parse_string(bytes) }
           expect(bytes.next - 0x60).to eq(0)
-          monkey = Hessian2.parse(bin)
-          expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+          _monkey = Hessian2.parse(bin)
+          expect([ _monkey.born_at, _monkey.name, _monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
         end
       end
 
@@ -53,10 +53,10 @@ module Hessian2
         expect([ bytes.next ].pack('C')).to eq('O')
         expect(Hessian2.parse_int(bytes)).to eq(16)
 
-        monkeys = Hessian2.parse(bin)
-        expect(monkeys.size).to eq(17)
-        monkeys.each do |monkey|
-          expect([ monkey.born_at, monkey.name, monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+        _monkeys = Hessian2.parse(bin)
+        expect(_monkeys.size).to eq(17)
+        _monkeys.each do |_monkey|
+          expect([ _monkey.born_at, _monkey.name, _monkey.price ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
         end
       end
 

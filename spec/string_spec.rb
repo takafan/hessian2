@@ -6,7 +6,7 @@ module Hessian2
       
       it "should write utf-8 string length 0-31 ::= [x00-x1f] <utf8-data>" do
         (0..31).each do |len|
-          val = '字' * len
+          val = '啦' * len
           bin = Hessian2.write(val)
 
           expect(bin[0].unpack('C').first).to eq(val.size)
@@ -18,7 +18,7 @@ module Hessian2
 
       it "should write utf-8 string length 0-1023 ::= [x30-x33] b0 <utf8-data>" do
         [ 33, 256, 512, 1023 ].each do |len|
-          val = '字' * len
+          val = '啦' * len
           bin = Hessian2.write(val)
 
           b1, b0 = bin[0, 2].unpack('CC')
@@ -28,9 +28,18 @@ module Hessian2
         end
       end
 
+      it "should write utf-8 string final chunk ('S') ::= S b1 b0 <utf8-data>" do
+        val = '啦' * 0x400
+        bin = Hessian2.write(val)
+        
+        expect(bin[0]).to eq('S')
+        expect(bin[1, 2].unpack('n').first).to eq(0x400)
+        expect(Hessian2.parse(bin)).to eq(val)
+      end
 
-      it "should write utf-8 string non-final chunk ('R') ::= x52 b1 b0 <utf8-data> and utf-8 string final chunk ('S') ::= S b1 b0 <utf8-data>" do
-        val = '字' * 0x10400
+
+      it "should write utf-8 string non-final chunk ('R') ::= x52 b1 b0 <utf8-data>" do
+        val = '啦' * 0x10400
         bin = Hessian2.write(val)
 
         chunks = val.size / 0x8000

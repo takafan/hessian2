@@ -3,34 +3,34 @@ module Hessian2
     attr_reader :values
     
     def initialize(klass, object)
-      if klass.nil?
-        is_struct = false
-    	elsif klass.is_a?(Array)
-    		is_struct = false
+      raise "klass should not be nil: #{klass}" unless klass
+
+      if klass.is_a?(Array)
+    		is_multi = true
     		members = klass.first.members
     	elsif klass.is_a?(String)
     		if klass.include?('[')
-    			is_struct = false
+    			is_multi = true
     			members = Kernel.const_get(klass.delete('[]')).members
     		else
-    			is_struct = true
+    			is_multi = false
     			members = Kernel.const_get(klass).members
     		end
     	else
-    		is_struct = true
+    		is_multi = false
     		members = klass.members
     	end
 
-      if is_struct
-        @values = get_values(members, object)
-      else
-        arr = []
+      if is_multi
+        values = []
         object.each do |o|
-          arr << get_values(members, o)
+          values << get_values(members, o)
         end
-
-        @values = arr
+      else
+        values = get_values(members, object)
       end
+        
+      @values = values
     end
 
 
@@ -38,7 +38,6 @@ module Hessian2
 
     def get_values(members, object)
       return nil unless object
-
       values = []
       if object.is_a?(Hash)
         members.each{|f| values << (object[f] || object[f.to_s]) }

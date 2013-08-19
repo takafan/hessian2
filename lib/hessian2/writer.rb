@@ -10,7 +10,7 @@ module Hessian2
       out = [ 'H', '2', '0', 'C' ].pack('ahha')
       out << write_string(method)
       out << write_int(args.size)
-      args.each { |arg| out << write(arg, refs, crefs, trefs) }
+      args.each{|arg| out << write(arg, refs, crefs, trefs) }
 
       out
     end
@@ -348,6 +348,7 @@ module Hessian2
 
 
     def write_type_wrapped_array(arr, tstr, eletype, refs = {}, crefs = {}, trefs = {})
+      puts eletype
       len = arr.size
       return [ BC_LIST_DIRECT ].pack('C') << tstr if len == 0
 
@@ -448,24 +449,22 @@ module Hessian2
     private
 
     def write_fields(object)
+      if object.is_a?(Hash)
+        keys = object.keys.map{|k| k.to_sym }
+      elsif object.instance_variable_get(:@attributes).is_a?(Hash)
+        keys = object.attributes.keys.map{|k| k.to_sym }
+      else
+        keys = object.instance_variables.map{|k| k[1..-1].to_sym }
+      end
+
+      raise "fields should not be empty: #{object.inspect}" if keys.empty?
+
       fields = []
       fstr = ''
-      if object.is_a?(Hash)
-        object.keys.each do |k|
-          fields << k.to_sym
-          fstr << write_string(k)
-        end
-      elsif object.instance_variable_get(:@attributes).is_a?(Hash)
-        object.attributes.keys.each do |k|
-          fields << k.to_sym
-          fstr << write_string(k)
-        end
-      elsif object
-        object.instance_variables.each do |k|
-          field = k[1..-1].to_sym
-          fields << field
-          fstr << write_string(field)
-        end
+
+      keys.each do |k|
+        fields << k
+        fstr << write_string(k)
       end
 
       [ fields, fstr ]
