@@ -12,10 +12,10 @@ module Hessian2
         bytes = bin.each_byte
         expect([ bytes.next ].pack('C')).to eq('M')
         expect(Hessian2.parse_string(bytes)).to eq(type)
-        map = Hessian2.parse(bin)
-        expect([ map['born_at'], map['name'], map['price'] ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
-        map2 = Hessian2.parse(bin, nil, symbolize_keys: true)
-        expect(map2).to eq(hash)
+        _hash = Hessian2.parse(bin)
+        expect([ _hash['born_at'], _hash['name'], _hash['price'] ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+        _hash2 = Hessian2.parse(bin, nil, symbolize_keys: true)
+        expect(_hash2).to eq(hash)
       end
 
 
@@ -25,11 +25,10 @@ module Hessian2
         bytes = bin.each_byte
         expect(bin[0]).to eq('H')
         expect(bin[-1]).to eq('Z')
-        map = Hessian2.parse(bin)
-        expect([ map['born_at'], map['name'], map['price'] ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
-        map2 = Hessian2.parse(bin, nil, symbolize_keys: true)
-        puts map2.inspect
-        expect(map2).to eq(hash)
+        _hash = Hessian2.parse(bin)
+        expect([ _hash['born_at'], _hash['name'], _hash['price'] ]).to eq([ hash[:born_at], hash[:name], hash[:price] ])
+        _hash2 = Hessian2.parse(bin, nil, symbolize_keys: true)
+        expect(_hash2).to eq(hash)
       end
 
     end

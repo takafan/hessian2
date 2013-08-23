@@ -137,38 +137,35 @@ module Hessian2
 
 
     def write_class_wrapper(val, refs, crefs, trefs)
-      obj = val.object
-      return write_nil unless obj
+      return write_nil unless val.values
 
       idx = refs[val.object_id]
       return write_ref(idx) if idx
 
       refs[val.object_id] = refs.size
 
-      is_array = val.klass.include?('[')
-      if is_array
-        type = val.klass
+      if val.is_multi?
+        type = '[' << val.klass
         if trefs.include?(type)
           tstr = write_int(trefs[type])
         else
           trefs[type] = trefs.size # store a type
           tstr = write_string(type)
         end
-        return [ BC_LIST_DIRECT ].pack('C') << tstr if obj.size == 0
+        return [ BC_LIST_DIRECT ].pack('C') << tstr if val.values.size == 0
       end
 
-      klass = val.klass.delete('[]')
-      cref = crefs[klass]
+      cref = crefs[val.klass]
       if cref
         cidx = cref.first
         fields = cref.last
         str = ''
       else
-        fields, fstr = write_fields(is_array ? obj.select{|x| x}.first : obj)
+        fstr = val.fields.map{|f| write_string(f) }.join
         
-        str = [ BC_OBJECT_DEF ].pack('C') << write_string(klass) << write_int(fields.size) << fstr
+        str = [ BC_OBJECT_DEF ].pack('C') << write_string(val.klass) << write_int(val.fields.size) << fstr
         cidx = crefs.size
-        crefs[klass] = [cidx, fields] # store a class definition
+        crefs[val.klass] = [cidx, val.fields] # store a class definition
       end
 
       if cidx <= OBJECT_DIRECT_MAX
@@ -177,17 +174,19 @@ module Hessian2
         cstr = [ BC_OBJECT ].pack('C') << write_int(cidx)
       end
 
-      if is_array
-        len = obj.size
+      if val.is_multi?
+        len = val.values.size
         if len <= LIST_DIRECT_MAX # [x70-77] type value*
           str << [ BC_LIST_DIRECT + len ].pack('C') << tstr
         else  # 'V' type int value*
           str << [ BC_LIST_FIXED ].pack('C') << tstr << write_int(len)
         end
 
-        obj.each{|ele| str << write_values(ele, cstr, fields, refs, crefs, trefs) }
+        str << val.values.map do |ov| 
+          ov ? cstr + ov.map{|v| write(v, refs, crefs, trefs)}.join : write_nil
+        end.join
       else
-        str << write_values(obj, cstr, fields, refs, crefs, trefs)
+        str << (cstr + val.values.map{|v| write(v, refs, crefs, trefs)}.join)
       end
 
       str
@@ -289,8 +288,8 @@ module Hessian2
         fields = cref.last
         str = ''
       else
-        fields, fstr = write_fields(object)
-
+        fields = get_fields(object)
+        fstr = fields.map{|f| write_string(f) }.join
         cidx = crefs.size
         crefs[klass] = [cidx, fields]
 
@@ -315,15 +314,14 @@ module Hessian2
 
 
     def write_struct_wrapper(val, refs, crefs, trefs)
-      values = val.values
-      return write_nil unless values
+      return write_nil unless val.values
 
       idx = refs[val.object_id]
       return write_ref(idx) if idx
 
       refs[val.object_id] = refs.size
 
-      write_array(values, refs, crefs, trefs)
+      write_array(val.values, refs, crefs, trefs)
     end
 
 
@@ -348,7 +346,6 @@ module Hessian2
 
 
     def write_type_wrapped_array(arr, tstr, eletype, refs = {}, crefs = {}, trefs = {})
-      puts eletype
       len = arr.size
       return [ BC_LIST_DIRECT ].pack('C') << tstr if len == 0
 
@@ -381,13 +378,7 @@ module Hessian2
               str << write_ref(idx)
             else
               refs[ele.object_id] = refs.size
-              if ele.is_a?(Hash)
-                str << write_type_wrapped_hash(ele, tstr, refs, crefs, trefs)
-              elsif ele.instance_variable_get(:@attributes).is_a?(Hash)
-                str << write_type_wrapped_hash(ele.attributes, tstr, refs, crefs, trefs)
-              else
-                str << write(ele, refs, crefs, trefs)
-              end
+              str << write_type_wrapped_object(ele, tstr, refs, crefs, trefs)
             end
           end
         end
@@ -397,11 +388,24 @@ module Hessian2
     end
 
 
-    def write_type_wrapped_hash(hash, tstr, refs = {}, crefs = {}, trefs = {})
+    def write_type_wrapped_object(object, tstr, refs = {}, crefs = {}, trefs = {})
       str = [ BC_MAP ].pack('C') << tstr
-      hash.each do |k, v|
-        str << write(k, refs, crefs, trefs)
-        str << write(v, refs, crefs, trefs)
+
+      if object.is_a?(Hash)
+        object.each do |k, v|
+          str << write(k, refs, crefs, trefs)
+          str << write(v, refs, crefs, trefs)
+        end
+      elsif object.instance_variable_get(:@attributes).is_a?(Hash)
+        object.attributes.each do |k, v|
+          str << write(k, refs, crefs, trefs)
+          str << write(v, refs, crefs, trefs)
+        end
+      else
+        object.instance_variables.each do |var| 
+          str << write(var[1..-1], refs, crefs, trefs)
+          str << write(object.instance_variable_get(var), refs, crefs, trefs)
+        end
       end
 
       str << [ BC_END ].pack('C')
@@ -409,15 +413,14 @@ module Hessian2
 
 
     def write_type_wrapper(val, refs, crefs, trefs)
-      obj = val.object
-      return write_nil if obj.nil?
+      return write_nil unless val.object
 
       idx = refs[val.object_id]
       return write_ref(idx) if idx
 
       refs[val.object_id] = refs.size
 
-      type = val.hessian_type
+      type = val.is_multi? ? ('[' << val.hessian_type) : val.hessian_type
       if trefs.include?(type)
         tstr = write_int(trefs[type])
       else
@@ -425,22 +428,25 @@ module Hessian2
         tstr = write_string(type)
       end
 
-      if type.include?('[')
-        write_type_wrapped_array(obj, tstr, type, refs, crefs, trefs)
+      if val.is_multi?
+        write_type_wrapped_array(val.object, tstr, val.hessian_type, refs, crefs, trefs)
       else
-        case type
+        case val.hessian_type
         when 'L'
-          write_long(Integer(obj))
+          write_long(Integer(val.object))
         when 'I'
-          write_int(Integer(obj))
+          write_int(Integer(val.object))
         when 'B'
-          write_binary(obj)
+          write_binary(val.object)
         else
-          if obj.is_a?(Hash)
-            write_type_wrapped_hash(obj, tstr, refs, crefs, trefs)
-          else
-            write(obj, refs, crefs, trefs)
-          end
+          # if val.object.is_a?(Hash)
+          #   write_type_wrapped_hash(val.object, tstr, refs, crefs, trefs)
+          # elsif val.object.instance_variable_get(:@attributes).is_a?(Hash)
+          #   write_type_wrapped_hash(val.object.attributes, tstr, refs, crefs, trefs)
+          # else
+          #   write(val.object, refs, crefs, trefs)
+          # end
+          write_type_wrapped_object(val.object, tstr, refs, crefs, trefs)
         end
       end
     end
@@ -448,39 +454,30 @@ module Hessian2
 
     private
 
-    def write_fields(object)
-      if object.is_a?(Hash)
-        keys = object.keys.map{|k| k.to_sym }
+    def get_fields(object)
+      fields = if object.is_a?(Hash)
+        object.keys.map{|k| k.to_sym }
       elsif object.instance_variable_get(:@attributes).is_a?(Hash)
-        keys = object.attributes.keys.map{|k| k.to_sym }
+        object.attributes.keys.map{|k| k.to_sym }
       else
-        keys = object.instance_variables.map{|k| k[1..-1].to_sym }
+        object.instance_variables.map{|k| k[1..-1].to_sym }
       end
 
-      raise "fields should not be empty: #{object.inspect}" if keys.empty?
+      raise "fields should not be empty: #{object.inspect}" if fields.empty?
 
-      fields = []
-      fstr = ''
-
-      keys.each do |k|
-        fields << k
-        fstr << write_string(k)
-      end
-
-      [ fields, fstr ]
+      fields
     end
 
 
     def write_values(object, cstr, fields, refs, crefs, trefs)
       return write_nil unless object
       
-      vstr = ''
-      if object.is_a?(Hash)
-        fields.each{|f| vstr << write(object[f] || object[f.to_s], refs, crefs, trefs) }
+      vstr = if object.is_a?(Hash)
+        fields.map{|f| write(object[f] || object[f.to_s], refs, crefs, trefs) }.join
       elsif object.instance_variable_get(:@attributes).is_a?(Hash)
-        fields.each{|f| vstr << write(object.attributes[f.to_s], refs, crefs, trefs) }
+        fields.map{|f| write(object.attributes[f.to_s], refs, crefs, trefs) }.join
       else
-        fields.each{|f| vstr << write(object.instance_variable_get(f.to_s.prepend('@')), refs, crefs, trefs) }
+        fields.map{|f| write(object.instance_variable_get(f.to_s.prepend('@')), refs, crefs, trefs) }.join
       end
 
       cstr + vstr

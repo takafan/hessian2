@@ -3,70 +3,71 @@ module Hessian2
     attr_reader :klass, :fields, :values, :is_multi
 
     def initialize(klass, object)
-    	raise "klass should not be nil: #{klass}" unless klass
-
-      fields = []
+    	raise 'klass should not be nil' unless klass
       
       if klass.include?('[')
-      	sample = object.select{|x| x}.first
-      	raise 'no object' unless sample
-
       	is_multi = true
-      	klass.delete!('[]')
+	      klass.delete!('[]')
 
-	      if sample.is_a?(Hash)
-	      	fields = sample.keys.map{|k| k.to_sym }
-	      elsif sample.instance_variable_get(:@attributes).is_a?(Hash)
-	      	fields = sample.attributes.keys.map{|k| k.to_sym }
+      	sample = object.select{|x| x}.first
+        unless sample # all nil
+	      	values = [ nil ] * object.size
 	      else
-	      	fields = sample.instance_variables.map{|k| k[1..-1].to_sym }
-	      end
-
-	      raise "fields should not be empty: #{object.inspect}" if fields.empty?
-
-	      values = []
-	      object.each do |obj|
-	      	vals = []
-	      	if obj.is_a?(Hash)
-		        fields.each{|f| vals << obj[f] || obj[f.to_s] }
-		      elsif obj.instance_variable_get(:@attributes).is_a?(Hash)
-		        fields.each{|f| vals << obj.attributes[f.to_s] }
+	      	fields = if sample.is_a?(Hash)
+		      	sample.keys.map{|k| k.to_sym }
+		      elsif sample.instance_variable_get(:@attributes).is_a?(Hash)
+		      	sample.attributes.keys.map{|k| k.to_sym }
 		      else
-		        fields.each{|f| vals << obj.instance_variable_get(f.to_s.prepend('@')) }
+		      	sample.instance_variables.map{|k| k[1..-1].to_sym }
 		      end
-		      values << vals
+
+		      raise "fields should not be empty: #{object.inspect}" if fields.empty?
+
+		      values = object.map do |obj|
+		      	if obj.nil?
+		      		nil
+		      	elsif obj.is_a?(Hash)
+			        fields.map{|f| obj[f] || obj[f.to_s] }
+			      elsif obj.instance_variable_get(:@attributes).is_a?(Hash)
+			        fields.map{|f| obj.attributes[f.to_s] }
+			      else
+			        fields.map{|f| obj.instance_variable_get(f.to_s.prepend('@')) }
+			      end
+		      end
 	      end
 	    else
-	    	raise 'no object' unless object
-
 	    	is_multi = false
 
-	    	fields = []
-	    	if object.is_a?(Hash)
-	    		values = []
-	        object.each do |k, v|
-	        	fields << k.to_sym
-	        	values << v
-	        end
-	      elsif object.instance_variable_get(:@attributes).is_a?(Hash)
-	      	values = []
-	        object.attributes.each do |k, v|
-	        	fields << k.to_sym
-	        	values << v
-	        end
-	      else
-	      	values = []
-	        object.instance_variables.each do |var|
-	        	k = var[1..-1]
-	        	fields << k.to_sym
-	        	values << object.instance_variable_get(k.prepend('@'))
-	        end
-	      end
+	    	if object
+	    		fields, values = [], []
+		    	if object.is_a?(Hash)
+		        object.each do |k, v|
+		        	fields << k.to_sym
+		        	values << v
+		        end
+		      elsif object.instance_variable_get(:@attributes).is_a?(Hash)
+		        object.attributes.each do |k, v|
+		        	fields << k.to_sym
+		        	values << v
+		        end
+		      else
+		        object.instance_variables.each do |var|
+		        	k = var[1..-1]
+		        	fields << k.to_sym
+		        	values << object.instance_variable_get(k.prepend('@'))
+		        end
+		      end
 
-	      raise "fields should not be empty: #{object.inspect}" if fields.empty?
+		      raise "fields should not be empty: #{object.inspect}" if fields.empty?
+		    end
 	    end
 
       @klass, @fields, @values, @is_multi = klass, fields, values, is_multi 
+    end
+
+
+    def is_multi?
+    	@is_multi
     end
 
   end
