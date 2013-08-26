@@ -150,6 +150,8 @@ end
 
 ## todo
 
+on linux string slower than thrift
+
 supports packet and envelope
 
 write in c
