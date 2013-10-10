@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.email       = ["takafan@163.com"]
   s.homepage    = "http://github.com/takafan/hessian2"
   s.summary     = %q{Hessian2}
-  s.description = %q{json encode fast, hessian write small.}
+  s.description = %q{like json, additionally, 麻绳2 parse your object as a struct.}
 
   s.rubyforge_project = "hessian2"
   s.license = 'MIT'

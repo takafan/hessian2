@@ -10,7 +10,8 @@ module Hessian2
 
     def initialize(url, proxy = {})
       uri = URI.parse(url)
-      @scheme, @host, @port, @path = uri.scheme, uri.host, uri.port, uri.path
+      @scheme, @host, @port, @path = uri.scheme, uri.host, uri.port, uri.path.empty? ? '/' : uri.path
+      @path += "?#{uri.query}" if uri.query
       raise "Unsupported Hessian protocol: #{@scheme}" unless %w(http https).include?(@scheme)
       @proxy = proxy
     end
