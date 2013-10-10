@@ -25,6 +25,7 @@ module Hessian2
     private
 
     def invoke(method, args)
+
       result = nil
       block = lambda do
         EM::Synchrony.sync(
@@ -37,11 +38,13 @@ module Hessian2
       end
 
       unless EM.reactor_running?
+        puts 'not running'
         EM.synchrony do
           result = Hessian2.parse_rpc(block.call.response)
           EM.stop
         end
       else
+        puts 'running'
         result = Hessian2.parse_rpc(block.call.response)
       end
 

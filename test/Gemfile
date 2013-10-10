@@ -1,0 +1,15 @@
+source "http://ruby.taobao.org"
+
+gem 'em-http-request'
+
+gem 'em-synchrony', require: ['em-synchrony', 'em-synchrony/connection_pool']
+
+gem 'faraday'
+
+gem 'hessian2'
+
+gem 'rack-fiber_pool'
+
+gem 'rainbows'
+
+gem 'sinatra'

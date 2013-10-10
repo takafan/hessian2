@@ -5,7 +5,9 @@ require 'hessian2'
 class MonkeyService
   extend Hessian2::Handler
 
-  def self.say(name)
+  def self.say(name = '')
+    sleep 3
+    puts 'say'
     "hello #{name}"
   end
 

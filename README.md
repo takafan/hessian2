@@ -150,6 +150,8 @@ end
 
 ## todo
 
+fiber aware
+
 on linux string slower than thrift
 
 supports packet and envelope
