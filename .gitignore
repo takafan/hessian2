@@ -4,6 +4,7 @@ Gemfile.lock
 doc/*
 pkg/*
 spec/*.yml
+spec/*.jpg
 test/*.data
 test/*.txt
 test/*.yml
