@@ -1,0 +1,11 @@
+source "http://ruby.taobao.org"
+
+gem 'em-synchrony', require: ['em-synchrony']
+
+gem 'hessian2'
+
+gem 'rack-fiber_pool'
+
+gem 'rainbows'
+
+gem 'sinatra'

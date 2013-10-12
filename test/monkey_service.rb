@@ -6,7 +6,7 @@ class MonkeyService
   extend Hessian2::Handler
 
   def self.say(name = '')
-    sleep 3
+    sleep 1
     puts 'say'
     "hello #{name}"
   end

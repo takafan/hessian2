@@ -1,0 +1,7 @@
+source 'http://ruby.taobao.org'
+
+gem 'hessian2'
+
+gem 'rainbows'
+
+gem 'sinatra'

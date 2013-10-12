@@ -29,7 +29,7 @@ module Hessian2
       result = nil
       block = lambda do
         EM::Synchrony.sync(
-          EM::HttpRequest.new("http://#{@host}:#{@port}", :connect_timeout => 5, :inactivity_timeout => 60).post(
+          EM::HttpRequest.new("http://#{@host}:#{@port}", :connect_timeout => 5, :inactivity_timeout => 60).apost(
             path: @path,
             head: {'Content-Type' => 'application/binary; charset=utf-8'},
             body: Hessian2.call(method, args)
