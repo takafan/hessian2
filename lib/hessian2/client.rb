@@ -30,7 +30,9 @@ module Hessian2
       conn = Net::HTTP.new(@host, @port, *@proxy.values_at(:host, :port, :user, :password))
       conn.use_ssl = true and conn.verify_mode = OpenSSL::SSL::VERIFY_NONE if @scheme == 'https'
       conn.start do |http|
-        Hessian2.parse_rpc(http.request(req, Hessian2.call(method, args)).body)
+        res = http.request(req, Hessian2.call(method, args))
+        # raise res.class
+        Hessian2.parse_rpc(res.body)
       end
 
       # res = nil

@@ -1,7 +1,11 @@
 source 'http://ruby.taobao.org'
 
+gem 'em-synchrony', require: ['em-synchrony']
+
 gem 'hessian2'
 
 gem 'rainbows'
 
 gem 'sinatra'
+
+gem 'sinatra-contrib'

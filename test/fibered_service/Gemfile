@@ -9,3 +9,5 @@ gem 'rack-fiber_pool'
 gem 'rainbows'
 
 gem 'sinatra'
+
+gem 'sinatra-contrib'
