@@ -1,7 +1,6 @@
 require 'em-synchrony'
 require 'em-synchrony/em-http'
 require 'em-synchrony/fiber_iterator'
-require 'net/http'
 
 number_of = 10
 concurrency = 2

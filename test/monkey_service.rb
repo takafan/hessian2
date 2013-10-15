@@ -6,14 +6,10 @@ require 'hessian2'
 class MonkeyService
   extend Hessian2::Handler
 
-  def self.say(name = '')
-    "hello #{name}"
-  end
-
   def self.sleep(name = '')
     puts 'handle sleep 1'
 
-    sleep 0.001
+    Kernel.sleep 1
 
     "wake #{name}"
   end

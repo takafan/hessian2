@@ -13,7 +13,7 @@ client = Hessian2::Client.new('http://127.0.0.1:8080/')
 number_of.times do |i|
   thread_pool.process do
     puts i
-    results << client.say
+    results << client.sleep
   end
 end
 

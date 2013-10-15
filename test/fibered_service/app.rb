@@ -7,15 +7,15 @@ get '/' do
   'post me'
 end
 
+post '/' do
+  MonkeyService.handle(request.body.read)
+end
+
 route :get, :post, '/sleep' do
   puts 'sleep 1'
   sleep 1
 
   'wake'
-end
-
-post '/' do
-  MonkeyService.handle(request.body.read)
 end
 
 route :get, :post, '/asleep' do
