@@ -7,28 +7,28 @@ require 'hessian2'
 module Hessian2
   class Client
     attr_accessor :user, :password
-    attr_reader :scheme, :host, :port, :path, :proxy
+    attr_reader :scheme, :host, :port, :path, :proxy, :async_result
 
-    include EventMachine::Deferrable
+    # include EventMachine::Deferrable
 
-    module Watcher
-      def initialize(client, deferable)
-        @client = client
-        @deferable = deferable
-      end
+    # module Watcher
+    #   def initialize(client, deferable)
+    #     @client = client
+    #     @deferable = deferable
+    #   end
 
-      def notify_readable
-        puts 'notify_readable'
-        detach
-        begin
-          result = @client.async_result
-        rescue Exception => e
-          @deferable.fail(e)
-        else
-          @deferable.succeed(result)
-        end
-      end
-    end
+    #   def notify_readable
+    #     puts 'notify_readable'
+    #     detach
+    #     begin
+    #       result = @client.async_result
+    #     rescue Exception => e
+    #       @deferable.fail(e)
+    #     else
+    #       @deferable.succeed(result)
+    #     end
+    #   end
+    # end
 
     def initialize(url, options = {})
       uri = URI.parse(url)
@@ -37,7 +37,7 @@ module Hessian2
       raise "Unsupported Hessian protocol: #{@scheme}" unless %w(http https).include?(@scheme)
       @fiber_aware = options.delete(:fiber_aware)
       @async = options.delete(:async)
-      @async_result = nil
+      @async_result = []
       @proxy = options
     end
 
@@ -64,21 +64,28 @@ module Hessian2
         req_url = "#{@scheme}://#{@host}:#{@port}#{@path}"
         if @async
           http = EM::HttpRequest.new(req_url).apost(body: req_body, head: req_head)
+          # puts http.inspect
           http.callback do |r|
-            puts 'callback'
+            
             @async_result = Hessian2.parse_rpc(r.response)
+            puts "callback #{@async_result}"
+            # EM.stop
           end
 
           http.errback do |r|
             puts 'errback'
+            puts r.error
             @async_result = Hessian2.write_fault(Fault.new r.error)
           end
 
-          # if ::EM.reactor_running?
-          deferable = ::EM::DefaultDeferrable.new
-          @watch = ::EM.watch(@port, Watcher, self, deferable)
-          @watch.notify_readable = true
-          deferable
+          
+          # ::EM::DefaultDeferrable.new
+
+          # # if ::EM.reactor_running?
+          # deferable = ::EM::DefaultDeferrable.new
+          # @watch = ::EM.watch(@port, Watcher, self, deferable)
+          # @watch.notify_readable = true
+          # deferable
 
           # req = EventMachine::HttpRequest.new(env[:url], connection_config(env))
           # req.setup_request(:post, { body: req_body, head: req_head }).callback { |client|
