@@ -52,7 +52,7 @@ module Hessian2
         write_float(val)
       when Fixnum
         write_int(val)
-      when Array
+      when Array, ActiveRecord::Relation
         write_array(val, refs, crefs, trefs)
       when Bignum
         if val >= -0x80_000_000 && val <= 0x7f_fff_fff # four octet longs

@@ -60,6 +60,19 @@ module Hessian2
         end
       end
 
+      it "should write ActiveRecord::Relation" do
+        val = Monkey.where(true).limit(2)
+        bin = Hessian2.write(val)
+
+        bytes = bin.each_byte
+        expect(bytes.next - 0x78).to eq(val.size)
+
+        born_at = Time.new(1989, 5, 8)
+        Hessian2.parse(bin).each_with_index do |_monkey, i|
+          expect([ _monkey.id, _monkey.name, _monkey.price, _monkey.born_at ]).to eq([ i + 1, "#{i}号猴", 0.25 * i, born_at + 86400 * i ])
+        end
+      end
+
     end
   end
 end
