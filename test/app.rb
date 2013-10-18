@@ -1,6 +1,4 @@
-lib_path = File.expand_path('../../lib', __FILE__)
-$:.unshift(lib_path)
-require File.expand_path('../../monkey_service',  __FILE__)
+require File.expand_path('../monkey_service',  __FILE__)
 
 set :logging, false
 
@@ -10,19 +8,18 @@ get '/' do
 end
 
 post '/' do
+  puts '/'
   MonkeyService.handle(request.body.read)
 end
 
 route :get, :post, '/sleep' do
-  puts 'sleep 1'
   sleep 1
 
   'wake'
 end
 
 route :get, :post, '/asleep' do
-  puts 'asleep 1'
   EM::Synchrony.sleep(1)
 
-  'wake'
+  'awake'
 end

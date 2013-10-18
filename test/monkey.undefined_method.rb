@@ -4,4 +4,4 @@ require 'hessian2'
 
 client = Hessian2::Client.new('http://127.0.0.1:8080/')
 
-puts client.sleep
+puts client.undefined_method

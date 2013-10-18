@@ -2,7 +2,9 @@ source 'http://ruby.taobao.org'
 
 gem 'em-synchrony', require: ['em-synchrony']
 
-gem 'hessian2'
+gem 'activerecord'
+
+gem 'bigdecimal'
 
 gem 'rainbows'
 
