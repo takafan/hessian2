@@ -8,7 +8,6 @@ get '/' do
 end
 
 post '/' do
-  puts '/'
   MonkeyService.handle(request.body.read)
 end
 

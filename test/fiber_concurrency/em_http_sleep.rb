@@ -1,13 +1,12 @@
 require File.expand_path('../../prepare', __FILE__)
 require 'em-synchrony'
+require 'em-synchrony/em-http'
 require 'em-synchrony/fiber_iterator'
-
-client = Hessian2::Client.new('http://127.0.0.1:8080/')
 
 EM.synchrony do
   EM::Synchrony::FiberIterator.new(0...@number_of, @concurrency).each do |i|
     puts i
-    @results << client.sleep
+    @results << EM::HttpRequest.new("http://127.0.0.1:8080/sleep").post.response
   end
 
   puts "results.size #{@results.size}"

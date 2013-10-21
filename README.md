@@ -148,15 +148,49 @@ post '/monkey' do
 end
 ```
 
+## fiber_aware
+
+fibered service, fiber aware client. use em-synchrony/em-http post.
+
+``` ruby
+client = Hessian2::Client.new(url, fiber_aware: true)
+concurrency = 2
+
+EM.synchrony do
+  EM::Synchrony::FiberIterator.new(0...10, concurrency).each do |i|
+    puts client.asleep
+  end
+
+  EM.stop
+end
+```
+
+## async
+
+evented service, asynchronous callbacks. use em-synchrony/em-http apost.
+
+``` ruby
+client = Hessian2::Client.new(url, async: true)
+
+EM.run do
+  http = client.asleep
+  http.callback do |r|
+    puts Hessian2.parse_rpc(r.response)
+    EM.stop
+  end
+
+  http.errback do |r|
+    puts r.error
+    EM.stop
+  end
+
+  puts "posted."
+end
+```
+
 ## todo
 
-fiber aware
-
-on linux string slower than thrift
-
 supports packet and envelope
-
-write in c
 
 ## authors
 

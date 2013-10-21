@@ -9,7 +9,7 @@ client = Hessian2::Client.new('http://127.0.0.1:8080/')
     puts i
     begin
       @results << client.asleep
-    rescue Hessian2::Fault => e
+    rescue RuntimeError => e
       puts "#{e.message}"
     end
   end

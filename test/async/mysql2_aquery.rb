@@ -32,6 +32,6 @@ end
 puts results.inspect
 puts "results.size #{results.size}"
 
-# time ruby test_mysql2_aquery.rb
-# 并发数 >= db连接池的场合，aquery等着用空闲连接，耗时和query一样
+# time ruby test/async/mysql2_aquery.rb
+# 并发数 >= db连接池的场合，aquery要等空闲连接出来，耗时和query一样
 # 并发数 < db连接池的场合，aquery可以马上用空闲连接发起下一波查询，也就更早拿到callback，比query快
