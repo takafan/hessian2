@@ -15,7 +15,11 @@ module Hessian2
       @async = options.delete(:async)
       @fiber_aware = options.delete(:fiber_aware)
       if @async || @fiber_aware
-        require 'em-synchrony/em-http'
+        begin
+          require 'em-synchrony/em-http'
+        rescue LoadError => error
+          raise "Missing EM-Synchrony dependency: gem install em-synchrony em-http-request"
+        end
       end
       @proxy = options
     end
