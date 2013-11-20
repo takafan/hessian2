@@ -1,5 +1,4 @@
 require 'uri'
-require 'net/http'
 require 'hessian2'
 
 module Hessian2
@@ -20,6 +19,8 @@ module Hessian2
         rescue LoadError => error
           raise "Missing EM-Synchrony dependency: gem install em-synchrony em-http-request"
         end
+      else
+        require 'net/http'
       end
       @proxy = options
     end
