@@ -1,6 +1,5 @@
 require 'uri'
 require 'net/http'
-require 'em-synchrony/em-http'
 require 'hessian2'
 
 module Hessian2
@@ -15,6 +14,9 @@ module Hessian2
       raise "Unsupported Hessian protocol: #{@scheme}" unless %w(http https).include?(@scheme)
       @async = options.delete(:async)
       @fiber_aware = options.delete(:fiber_aware)
+      if @async || @fiber_aware
+        require 'em-synchrony/em-http'
+      end
       @proxy = options
     end
 

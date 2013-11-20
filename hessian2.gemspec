@@ -22,6 +22,4 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rspec'
   s.add_runtime_dependency 'activerecord'
   s.add_runtime_dependency 'bigdecimal'
-  s.add_runtime_dependency 'em-http-request'
-  s.add_runtime_dependency 'em-synchrony'
 end
