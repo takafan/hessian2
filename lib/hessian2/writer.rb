@@ -471,9 +471,9 @@ module Hessian2
       fields = if object.is_a?(Hash)
         object.keys.map{|k| k.to_sym }
       elsif object.instance_variable_get(:@values).is_a?(Hash)
-        object.values.keys.map{|k| k.to_sym }
+        object.values.keys
       elsif object.instance_variable_get(:@attributes).is_a?(Hash)
-        object.attributes.keys.map{|k| k.to_sym }
+        object.attributes.keys
       else
         object.instance_variables.map{|k| k[1..-1].to_sym }
       end
@@ -490,9 +490,9 @@ module Hessian2
       vstr = if object.is_a?(Hash)
         fields.map{|f| write(object[f] || object[f.to_s], refs, crefs, trefs) }.join
       elsif object.instance_variable_get(:@values).is_a?(Hash)
-        fields.map{|f| write(object.values[f.to_s], refs, crefs, trefs) }.join
+        fields.map{|f| write(object.values[f], refs, crefs, trefs) }.join
       elsif object.instance_variable_get(:@attributes).is_a?(Hash)
-        fields.map{|f| write(object.attributes[f.to_s], refs, crefs, trefs) }.join
+        fields.map{|f| write(object.attributes[f], refs, crefs, trefs) }.join
       else
         fields.map{|f| write(object.instance_variable_get(f.to_s.prepend('@')), refs, crefs, trefs) }.join
       end
