@@ -43,10 +43,10 @@ module Hessian2
         members.each{|f| values << (object[f] || object[f.to_s]) }
       elsif object.instance_variable_get(:@values).is_a?(Hash)
         attrs = object.values
-        members.each{|f| values << attrs[f.to_s] }
+        members.each{|f| values << attrs[f] }
       elsif object.instance_variable_get(:@attributes).is_a?(Hash)
         attrs = object.attributes
-        members.each{|f| values << attrs[f.to_s] }
+        members.each{|f| values << attrs[f] }
       else
         members.each{|f| values << object.instance_variable_get(f.to_s.prepend('@')) }
       end
