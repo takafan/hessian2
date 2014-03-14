@@ -20,6 +20,5 @@ Gem::Specification.new do |s|
   s.require_paths = ['lib']
 
   s.add_development_dependency 'rspec'
-  s.add_runtime_dependency 'activerecord'
   s.add_runtime_dependency 'bigdecimal'
 end
