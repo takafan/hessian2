@@ -1,6 +1,5 @@
 require 'hessian2/constants'
 require 'bigdecimal'
-require 'active_record'
 
 module Hessian2
   module Writer
@@ -53,7 +52,7 @@ module Hessian2
         write_float(val)
       when Fixnum
         write_int(val)
-      when Array, ActiveRecord::Relation
+      when Array
         write_array(val, refs, crefs, trefs)
       when Bignum
         if val >= -0x80_000_000 && val <= 0x7f_fff_fff # four octet longs
@@ -287,6 +286,8 @@ module Hessian2
     def write_object(object, refs = {}, crefs = {}, trefs = {})
       return write_nil unless object
 
+      return write_array(object, refs, crefs, trefs) if object.respond_to?(:count) && (object.respond_to?(:sql) || object.respond_to?(:to_sql))
+
       idx = refs[object.object_id]
       return write_ref(idx) if idx
 
@@ -469,6 +470,8 @@ module Hessian2
     def get_fields(object)
       fields = if object.is_a?(Hash)
         object.keys.map{|k| k.to_sym }
+      elsif object.instance_variable_get(:@values).is_a?(Hash)
+        object.values.keys.map{|k| k.to_sym }
       elsif object.instance_variable_get(:@attributes).is_a?(Hash)
         object.attributes.keys.map{|k| k.to_sym }
       else
@@ -486,6 +489,8 @@ module Hessian2
       
       vstr = if object.is_a?(Hash)
         fields.map{|f| write(object[f] || object[f.to_s], refs, crefs, trefs) }.join
+      elsif object.instance_variable_get(:@values).is_a?(Hash)
+        fields.map{|f| write(object.values[f.to_s], refs, crefs, trefs) }.join
       elsif object.instance_variable_get(:@attributes).is_a?(Hash)
         fields.map{|f| write(object.attributes[f.to_s], refs, crefs, trefs) }.join
       else

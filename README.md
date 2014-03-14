@@ -4,6 +4,8 @@ like json, additionally, 麻绳2 parse your object as a struct.
 
 hessian2 implements hessian 2.0 protocol. look [web services protocol](http://hessian.caucho.com/doc/hessian-ws.html) and [serialization protocol](http://hessian.caucho.com/doc/hessian-serialization.html).
 
+Sequel::Mysql2::Dataset and ActiveRecord::Relation are also okey.
+
 ## comparing
 
 yajl-ruby: json, fast.
