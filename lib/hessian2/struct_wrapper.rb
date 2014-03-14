@@ -41,6 +41,9 @@ module Hessian2
       values = []
       if object.is_a?(Hash)
         members.each{|f| values << (object[f] || object[f.to_s]) }
+      elsif object.instance_variable_get(:@values).is_a?(Hash)
+        attrs = object.values
+        members.each{|f| values << attrs[f.to_s] }
       elsif object.instance_variable_get(:@attributes).is_a?(Hash)
         attrs = object.attributes
         members.each{|f| values << attrs[f.to_s] }

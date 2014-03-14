@@ -15,8 +15,10 @@ module Hessian2
 	      else
 	      	fields = if sample.is_a?(Hash)
 		      	sample.keys.map{|k| k.to_sym }
+          elsif sample.instance_variable_get(:@values).is_a?(Hash)
+            sample.values.keys.map{|k| k}
 		      elsif sample.instance_variable_get(:@attributes).is_a?(Hash)
-		      	sample.attributes.keys.map{|k| k.to_sym }
+		      	sample.attributes.keys.map{|k| k }
           elsif sample.is_a?(ClassWrapper)
             sample.fields
           elsif sample.is_a?(TypeWrapper)
@@ -32,8 +34,10 @@ module Hessian2
 		      		nil
 		      	elsif obj.is_a?(Hash)
 			        fields.map{|f| obj[f] || obj[f.to_s] }
+            elsif obj.instance_variable_get(:@values).is_a?(Hash)
+              fields.map{|f| obj.values[f] }
 			      elsif obj.instance_variable_get(:@attributes).is_a?(Hash)
-			        fields.map{|f| obj.attributes[f.to_s] }
+			        fields.map{|f| obj.attributes[f] }
             elsif obj.is_a?(ClassWrapper)
               obj.values
             elsif obj.is_a?(TypeWrapper)
@@ -53,9 +57,14 @@ module Hessian2
 		        	fields << k.to_sym
 		        	values << v
 		        end
+          elsif object.instance_variable_get(:@values).is_a?(Hash)
+            object.values.each do |k, v|
+              fields << k
+              values << v
+            end
 		      elsif object.instance_variable_get(:@attributes).is_a?(Hash)
 		        object.attributes.each do |k, v|
-		        	fields << k.to_sym
+		        	fields << k
 		        	values << v
 		        end
           elsif object.is_a?(ClassWrapper)
