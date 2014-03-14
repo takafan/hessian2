@@ -101,7 +101,7 @@ module Hessian2
       return write_ref(idx) if idx
 
       refs[arr.object_id] = refs.size
-      len = arr.size
+      len = arr.count
       if len <= LIST_DIRECT_MAX # [x78-7f] value*
         str = [ BC_LIST_DIRECT_UNTYPED + len ].pack('C')
       else  # x58 int value*
