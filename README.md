@@ -6,6 +6,10 @@ hessian2 implements hessian 2.0 protocol. look [web services protocol](http://he
 
 Sequel::Mysql2::Dataset and ActiveRecord::Relation are also okey.
 
+## changelog
+
+2.0.6: support ruby 2.4 Integer 
+
 ## comparing
 
 yajl-ruby: json, fast.

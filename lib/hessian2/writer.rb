@@ -60,6 +60,8 @@ module Hessian2
         else # long
           [ BC_LONG, val ].pack('Cq>')
         end
+      when Integer
+        write_int(val)
       when Hash
         write_hash(val, refs, crefs, trefs)
       when NilClass
